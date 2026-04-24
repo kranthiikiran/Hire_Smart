@@ -1,0 +1,9 @@
+{
+  "name": "hiresmart-workspace",
+  "private": true,
+  "version": "1.0.0",
+  "description": "HireSmart workspace launcher",
+  "scripts": {
+    "start": "node scripts/start-all.js"
+  }
+}

@@ -1,0 +1,124 @@
+# ============================================================
+# OPENAI INTEGRATION SETUP GUIDE
+# ============================================================
+
+## STEP 1: Install OpenAI Package
+Run in terminal:
+```powershell
+cd ai
+python -m pip install openai python-dotenv --upgrade
+```
+
+Or if pip is in PATH:
+```powershell
+pip install openai python-dotenv
+```
+
+## STEP 2: Get OpenAI API Key
+1. Go to: https://platform.openai.com/api-keys
+2. Sign up or log in to your OpenAI account
+3. Click "Create new secret key"
+4. Copy the key (starts with "sk-...")
+
+## STEP 3: Configure API Key
+Open: backend/.env
+Add your API key:
+```
+OPENAI_API_KEY=sk-your-actual-api-key-here
+```
+
+## STEP 4: Test OpenAI Integration
+```powershell
+cd ai
+echo '{"resume_text":"Senior developer with Python and React","job_description":"Looking for React developer","job_title":"React Developer"}' | python resume_match.py
+```
+
+Should see: "ai_enhancement": "enabled" in output
+
+## STEP 5: Verify in Backend
+When you upload resumes, check backend logs for:
+- "✓ OpenAI enhancement applied"
+
+## What OpenAI Adds:
+1. GPT-powered skill extraction (more accurate than keyword matching)
+2. Semantic similarity score using language model understanding
+3. Experience assessment with nuanced evaluation
+4. Cultural fit indicators from resume content
+5. Missing critical skills identification
+6. Confidence scoring on recommendations
+7. Blended score (60% traditional + 40% GPT)
+
+## Cost Notes:
+- Uses GPT-3.5-turbo (cheaper model)
+- ~$0.0015 per resume analyzed
+- For 1000 resumes = ~$1.50
+
+## Fallback Behavior:
+If OpenAI API key is not set or invalid:
+- System continues with traditional NLP (TF-IDF + cosine similarity)
+- No errors, just logs "OpenAI not configured"
+- All features still work without OpenAI
+
+## Environment Variable:
+```
+OPENAI_API_KEY=sk-...    # Required for GPT enhancement
+```
+
+## Disable OpenAI (if needed):
+In backend/.env:
+```
+OPENAI_API_KEY=
+```
+
+Or comment it out:
+```
+# OPENAI_API_KEY=sk-...
+```
+
+## Security:
+- Never commit .env file to Git
+- Keep API key secret
+- Use environment variables in production
+- Monitor OpenAI usage dashboard
+
+## Troubleshooting:
+Error: "OpenAI package not installed"
+→ Run: python -m pip install openai
+
+Error: "Invalid API key"
+→ Check key starts with "sk-" and is copied fully
+
+Error: "Rate limit exceeded"
+→ Wait a few minutes or upgrade OpenAI plan
+
+## Expected Output Format:
+```json
+{
+  "score": 85,
+  "classification": "SUITABLE",
+  "ai_enhancement": "enabled",
+  "gpt_insights": {
+    "extracted_skills": ["react", "typescript", "node.js"],
+    "missing_critical_skills": ["kubernetes"],
+    "experience_assessment": "Strong 5+ years experience...",
+    "cultural_fit_notes": "Team-oriented, mentions collaboration",
+    "gpt_recommendation": "HIGHLY_SUITABLE",
+    "gpt_confidence": 92,
+    "gpt_semantic_score": 88.5
+  },
+  "blended_score": 86.5,
+  "score_breakdown": {
+    "traditional_nlp": 85,
+    "gpt_semantic": 88.5,
+    "final_blended": 86.5
+  }
+}
+```
+
+## Benefits:
+✓ More accurate skill matching
+✓ Better understanding of experience relevance
+✓ Catches nuanced qualifications
+✓ Reduces false negatives
+✓ Provides hiring manager insights
+✓ Confidence scoring helps prioritize reviews

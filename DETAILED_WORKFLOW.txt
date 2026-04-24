@@ -1,0 +1,1116 @@
+================================================================================
+                    HIRESMART PROJECT - DETAILED WORKFLOW
+                   AI-Powered Resume Screening System
+================================================================================
+
+PROJECT OVERVIEW
+================================================================================
+HireSmart is a production-ready, AI-powered resume screening system designed to 
+automate candidate evaluation using Natural Language Processing (NLP) and machine 
+learning. It helps recruiters save time by automatically analyzing resumes against 
+job descriptions, ranking candidates, and providing detailed insights.
+
+TARGET USERS:
+  • Recruiters: Batch upload and analyze multiple resumes
+  • Job Seekers: Get AI-powered feedback on resumes
+  • HR Professionals: Generate job descriptions and match candidates
+
+================================================================================
+                            COMPLETE WORKFLOW
+================================================================================
+
+PHASE 1: USER AUTHENTICATION & REGISTRATION
+================================================================================
+Step 1.1: User Visits Application
+  Location: Frontend (React)
+  Technologies Used:
+    • React 18.2 - UI framework
+    • React Router 6.20 - Client-side routing
+    • Vite 5.0 - Build tool and dev server
+    • Axios - HTTP client
+  
+  Process:
+    1. Application loads at http://localhost:5173 (dev) or production URL
+    2. Vite development server bundles React components
+    3. Initial bundle includes Login component
+    4. Page renders: "HireSmart - AI Resume Screening System"
+
+Step 1.2: User Registration/Login
+  Components Involved:
+    • Frontend: Register.jsx, Login.jsx
+    • Backend: middleware/auth.js
+    • Database: store.json (JSON file storage)
+  
+  Technologies Used:
+    • Express.js 4.18 - Backend server
+    • JWT (jsonwebtoken 9.0.2) - Token generation
+    • bcryptjs 2.4.3 - Password hashing
+    • Joi 17.11.0 - Input validation
+    • CORS 2.8.5 - Cross-origin requests
+    • Helmet 7.0.0 - Security headers
+  
+  Workflow:
+    a) User completes registration form (email, password, role selection)
+    b) React component sends POST request to backend: /api/auth/register
+    c) Backend validates input using Joi validation schema
+    d) Password is hashed using bcryptjs (salt rounds: 10)
+    e) User data stored in backend/data/store.json
+    f) JWT access token generated (expires: 1 hour)
+    f) JWT refresh token generated (expires: 7 days)
+    g) Frontend stores tokens in localStorage or sessionStorage
+    h) User redirected to Dashboard
+  
+  Request/Response Example:
+    POST /api/auth/register
+    {
+      "email": "recruiter@company.com",
+      "password": "SecurePassword123!",
+      "role": "recruiter"
+    }
+    
+    Response:
+    {
+      "success": true,
+      "user": {
+        "id": "uuid-string",
+        "email": "recruiter@company.com",
+        "role": "recruiter"
+      },
+      "accessToken": "eyJhbGciOiJIUzI1NiIs...",
+      "refreshToken": "eyJhbGciOiJIUzI1NiIs..."
+    }
+
+PHASE 2: JOB DESCRIPTION SETUP
+================================================================================
+Step 2.1: Provide Job Requirements
+  Location: Frontend - Upload.jsx
+  Technologies Used:
+    • React Context API - State management
+    • Axios - API calls
+  
+  Process:
+    1. User can either:
+       Option A: Type job description manually
+       Option B: Let AI generate one (if enabled)
+  
+  If Manual Entry:
+    • User enters job description in text field
+    • Frontend validates minimum word count (50+ words)
+    • Data stored in React state
+  
+  If AI Generation (Optional Feature):
+    • User provides: Job title, experience level, required skills
+    • Request sent to: POST /api/jobs/generate-description
+    • Backend calls AI service with parameters
+
+Step 2.2: Parse & Store Job Description
+  Backend Processing: API endpoint /api/jobs/validate
+  
+  Technologies Used:
+    • Express middleware: validateJobDescription
+    • Text preprocessing: Custom regex patterns
+    • Storage: services/dataStore.js
+  
+  Processing Steps:
+    a) Text is normalized (lowercase, trimmed, whitespace normalized)
+    b) Skills are extracted using keyword matching
+    c) Experience level determined
+    d) Job requirements stored with unique ID (UUID v4)
+    e) Data cached in memory for performance
+  
+  Extracted Metadata:
+    • Required skills list
+    • Experience level (Entry/Mid/Senior)
+    • Job title
+    • Key qualifications
+    • Salary range (if provided)
+
+PHASE 3: RESUME UPLOAD & PARSING
+================================================================================
+Step 3.1: User Uploads Resumes
+  Location: Frontend - Upload.jsx
+  Technologies Used:
+    • React Dropzone 14.2.3 - Drag-and-drop upload
+    • Multer 1.4.5 - File upload handling (backend)
+    • File validation - Magic number detection
+    • Axios - Multi-file upload
+  
+  Supported Formats:
+    • PDF (.pdf)
+    • DOCX (.docx)
+    • Text (.txt)
+    • DOC (.doc)
+  
+  Upload Process:
+    1. User drags files onto upload zone OR clicks to select
+    2. React component validates:
+       • File size (max: 5 MB per file)
+       • File type (allowed MIME types)
+       • Maximum 20 files per batch
+    3. Frontend displays upload progress bar
+    4. Files sent to: POST /api/analyze/batch
+    5. Backend receives files through Multer middleware
+
+Step 3.2: Extract Text from Resumes
+  Backend Processing: Multiple extraction methods based on file type
+  
+  Technologies Used:
+    • pdf-parse 1.1.1 - PDF text extraction
+    • mammoth 1.6.0 - DOCX text extraction
+    • Native fs module - TXT file reading
+    • JSZip 3.10.1 - DOCX archive handling
+  
+  Extraction Workflows:
+  
+  A) PDF Files:
+     • fs.readFileSync() reads file buffer
+     • pdf-parse processes buffer
+     • pdfData.text extracted
+     • Handles: Text, embedded fonts, images with OCR (optional)
+     • Storage: backend/uploads/ with hash filename
+  
+  B) DOCX Files:
+     • fs.readFileSync() reads file buffer
+     • JSZip extracts document.xml from ZIP archive
+     • mammoth converts XML to plain text
+     • Preserves: Formatting metadata, table content
+     • Storage: backend/uploads/ with hash filename
+  
+  C) TXT Files:
+     • fs.readFileSync() with UTF-8 encoding
+     • Direct text parsing
+     • Minimal processing overhead
+  
+  Example Extracted Text:
+    "John Doe
+     Software Engineer
+     john.doe@email.com | +1-234-567-8900 | linkedin.com/in/johndoe
+     
+     EXPERIENCE:
+     Senior Software Engineer at TechCorp (2022-Present)
+     - Led development of microservices using Node.js and Express
+     - Implemented CI/CD pipelines with GitHub Actions
+     ...
+     
+     SKILLS:
+     - Programming: JavaScript, Python, Java, TypeScript
+     - Frameworks: React, Next.js, Node.js, Express
+     - Databases: PostgreSQL, MongoDB, Redis
+     - DevOps: Docker, Kubernetes, AWS"
+
+PHASE 4: RESUME ANALYSIS & SKILL EXTRACTION
+================================================================================
+Step 4.1: Parse Resume Text & Extract Information
+  Backend Service: services/resumeParser.js
+  Technologies Used:
+    • Node.js built-in RegExp
+    • Custom text parsing algorithms
+    • Services/dataStore.js
+  
+  Extracted Information:
+    1. Candidate Name - Heuristic from first lines
+    2. Email Address - Regex: /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/
+    3. Phone Number - Regex: /(\+?1[-.\s]?)?\(?([0-9]{3})\)?[-.\s]?([0-9]{3})[-.\s]?([0-9]{4})/
+    4. Skills - Keyword matching against database
+    5. Experience Level - Years calculation
+    6. Education - Degree extraction
+    7. LinkedIn URL - URL pattern matching
+
+Step 4.2: Advanced Skill Extraction
+  Backend Service: services/aiService.js
+  Technologies Used:
+    • Python 3.x - AI processing
+    • Custom Python Script: ai/resume_match.py
+    • Child Process Spawning: child_process.spawn()
+    • JSON inter-process communication
+  
+  Skill Database (Modern 2026):
+    • Programming: 22 languages (Python, Java, JavaScript, TypeScript, Rust, Go, etc.)
+    • Frameworks: 15+ modern frameworks (React, Next.js, Vue, Angular, Svelte, etc.)
+    • Databases: 18+ databases (PostgreSQL, MongoDB, Redis, Firebase, etc.)
+    • Cloud Platforms: AWS, Azure, GCP, Vercel, Netlify, Railway, etc.
+    • AI/ML: TensorFlow, PyTorch, LangChain, OpenAI, Claude, etc.
+    • DevOps: Docker, Kubernetes, Jenkins, GitHub Actions, Terraform, etc.
+    • Testing: Jest, Pytest, Cypress, Selenium, Playwright, etc.
+    • Web Tech: HTML5, CSS3, TailwindCSS, GraphQL, REST, etc.
+    • Mobile: React Native, Flutter, Swift, Kotlin, etc.
+    • Security: OAuth, JWT, SSL/TLS, GDPR, OWASP, etc.
+    • Total: 200+ skills tracked
+  
+  Extraction Process:
+    1. Resume text sent to Python script via spawn()
+    2. Python script receives JSON input:
+       {
+         "resume_text": "...",
+         "job_description": "..."
+       }
+    
+    3. Python performs multi-step analysis:
+       a) Text normalization (lowercase, stemming)
+       b) Regex-based skill matching against database
+       c) Skill frequency counting
+       d) Confidence scoring for each skill
+       e) Returns JSON output
+    
+    4. Output structure:
+       {
+         "matched_skills": {
+           "python": 8,
+           "react": 5,
+           "nodejs": 6,
+           "docker": 3
+         },
+         "confidence_scores": {...},
+         "missing_skills": ["kubernetes", "graphql"],
+         "additional_skills": ["java", "aws"]
+       }
+
+PHASE 5: SEMANTIC MATCHING & SIMILARITY ANALYSIS
+================================================================================
+Step 5.1: Extract Job Requirements as Keywords
+  Data Input: Job description provided by user
+  Technologies Used:
+    • Python: ai/resume_match.py
+    • scikit-learn 1.x - TF-IDF vectorization
+    • sklearn.feature_extraction.text.TfidfVectorizer
+  
+  Process:
+    1. Job description tokenized into keywords
+    2. Common stop words removed (the, a, an, etc.)
+    3. Remaining words weighted by importance
+    4. TF-IDF scores calculated for each keyword
+  
+  Example Job Requirements:
+    Input: "We need a Senior React Developer with 5+ years experience, 
+            proficient in Node.js, PostgreSQL, Docker, and AWS"
+    
+    Extracted Keywords:
+    {
+      "React": 0.95 (high importance),
+      "Senior": 0.85,
+      "Node.js": 0.92,
+      "PostgreSQL": 0.88,
+      "Docker": 0.87,
+      "AWS": 0.86,
+      "experience": 0.60
+    }
+
+Step 5.2: Calculate Semantic Similarity
+  Backend Service: ai/resume_match.py
+  Technologies Used:
+    • scikit-learn - Cosine Similarity
+    • sklearn.metrics.pairwise.cosine_similarity
+    • NumPy - Matrix operations
+  
+  Algorithm:
+    1. Resume text converted to TF-IDF vector
+    2. Job description converted to TF-IDF vector
+    3. Cosine similarity calculated: CS = (A·B) / (||A|| × ||B||)
+       Where: A = resume vector, B = job vector
+    4. Result: similarity_score between 0 and 1
+  
+  Example Calculation:
+    Resume Vector TF-IDF:
+    [React=0.82, Node.js=0.78, PostgreSQL=0.71, Docker=0.65, AWS=0.60]
+    
+    Job Vector TF-IDF:
+    [React=0.95, Node.js=0.92, PostgreSQL=0.88, Docker=0.87, AWS=0.86]
+    
+    Cosine Similarity = 0.92 (92% match)
+
+PHASE 6: SCORING & RANKING
+================================================================================
+Step 6.1: Calculate Composite Match Score
+  Backend Service: services/aiService.js
+  Technologies Used:
+    • Custom scoring algorithm (Node.js)
+    • Python inter-process calls
+  
+  Weighted Scoring Formula:
+  
+  FINAL_SCORE = (SkillMatch × 0.60) + (ExperienceRelevance × 0.25) + (SemanticSimilarity × 0.15)
+  
+  Where:
+    • SkillMatch (60% weight):
+      - Count matching skills from database
+      - Formula: (Matched Skills / Total Required Skills) × 100
+      - Example: 8 matched / 10 required = 80%
+    
+    • ExperienceRelevance (25% weight):
+      - Years of experience extraction from resume
+      - Level matching (Entry/Mid/Senior)
+      - Formula: (Years Extracted / Years Required) × 100 (capped at 100%)
+      - Example: 6 years provided / 5 years required = 100%
+    
+    • SemanticSimilarity (15% weight):
+      - Cosine similarity from previous step
+      - Formula: cosine_similarity_score × 100
+      - Example: 0.92 × 100 = 92%
+  
+  Example Calculation:
+    Resume: John Doe
+      • Matched Skills: 8/10 = 80%
+      • Experience: 6 years (required 5) = 100%
+      • Semantic Similarity: 0.92 = 92%
+    
+    FINAL_SCORE = (80 × 0.60) + (100 × 0.25) + (92 × 0.15)
+                = 48 + 25 + 13.8
+                = 86.8 (87% overall match)
+
+Step 6.2: Candidate Classification
+  Backend Logic: services/aiService.js
+  
+  Classification Rules:
+    • SUITABLE (✓): Score >= 75%
+      → Highly recommended for interview
+      → Strong skill match and experience alignment
+    
+    • PARTIALLY_SUITABLE (⚠): Score 50-75%
+      → Consider for further review
+      → Good potential with some skill gaps
+    
+    • NOT_SUITABLE (✗): Score < 50%
+      → Limited match with position
+      → May need significant training
+  
+  Storage Format:
+    {
+      "resume_id": "uuid-hash",
+      "candidate_name": "John Doe",
+      "email": "john.doe@email.com",
+      "match_score": 87,
+      "classification": "SUITABLE",
+      "skill_match": 80,
+      "experience_match": 100,
+      "semantic_match": 92,
+      "matched_skills": ["React", "Node.js", "PostgreSQL", "Docker", "AWS"],
+      "missing_skills": ["Kubernetes", "GraphQL"],
+      "additional_skills": ["Java", "Python"],
+      "years_of_experience": 6,
+      "analysis_timestamp": "2026-03-06T10:30:45Z"
+    }
+
+PHASE 7: BATCH PROCESSING OPTIMIZATION
+================================================================================
+Step 7.1: Handle Multiple Resumes (Batch)
+  Backend Service: services/batchProcessor.js
+  Technologies Used:
+    • Bull 3.16.0 - Job queue management
+    • Redis 4.6.8 - Queue backend (optional)
+    • Async/Await - Concurrent processing
+    • Node.js Worker Threads (optional)
+  
+  Maximum Batch Size: 20 resumes
+  Processing Strategy:
+    1. Queue system receives batch upload
+    2. Job split into 4 concurrent workers
+    3. Each worker processes 5 resumes simultaneously
+    4. Progress tracking for frontend
+    5. Results aggregated and returned
+  
+  Performance Optimization:
+    • Caching: Processed job descriptions stored in memory
+    • Reuse: Prevents re-processing same job description
+    • Concurrency: Multiple Python processes spawn in parallel
+    • Queue Management: Failed jobs automatically retry (3 attempts)
+  
+  Queue Entry Structure:
+    {
+      "job_id": "batch-uuid",
+      "resumes": [
+        { "path": "uploads/hash1.pdf", "original_name": "resume1.pdf" },
+        { "path": "uploads/hash2.txt", "original_name": "resume2.txt" }
+      ],
+      "job_description": "...",
+      "user_id": "user-uuid",
+      "created_at": "2026-03-06T10:30:45Z",
+      "status": "processing"
+    }
+
+Step 7.2: Aggregate & Sort Results
+  Backend Process: Collect results from all workers
+  
+  Sorting Algorithm:
+    1. All results collected in array
+    2. Sort by match_score (descending)
+    3. Add ranking: rank_1, rank_2, rank_3, etc.
+    4. Group by classification (SUITABLE first)
+  
+  Before Sorting:
+    [
+      { candidate: "Alice", score: 92, status: "SUITABLE" },
+      { candidate: "Bob", score: 68, status: "PARTIALLY_SUITABLE" },
+      { candidate: "Charlie", score: 87, status: "SUITABLE" },
+      { candidate: "David", score: 45, status: "NOT_SUITABLE" }
+    ]
+  
+  After Sorting:
+    [
+      { candidate: "Alice", score: 92, rank: 1, status: "SUITABLE" },
+      { candidate: "Charlie", score: 87, rank: 2, status: "SUITABLE" },
+      { candidate: "Bob", score: 68, rank: 3, status: "PARTIALLY_SUITABLE" },
+      { candidate: "David", score: 45, rank: 4, status: "NOT_SUITABLE" }
+    ]
+
+PHASE 8: RESULTS STORAGE & RETRIEVAL
+================================================================================
+Step 8.1: Store Analysis Results
+  Storage Location: backend/data/store.json
+  Technologies Used:
+    • JSON file storage
+    • fs.promises - Async file operations
+    • UUID 9.0.0 - Unique ID generation
+  
+  Data Structure:
+    {
+      "analyses": [
+        {
+          "id": "analysis-uuid",
+          "user_id": "user-uuid",
+          "job_description": "Senior React Developer needed...",
+          "created_at": "2026-03-06T10:30:45Z",
+          "resumes": [
+            {
+              "id": "resume-uuid",
+              "candidate_name": "John Doe",
+              "filename": "resume1.pdf",
+              "email": "john@email.com",
+              "phone": "+1-234-567-8900",
+              "match_score": 87,
+              "classification": "SUITABLE",
+              "skill_breakdown": {
+                "matched": ["React", "Node.js", "PostgreSQL", "Docker"],
+                "missing": ["Kubernetes"],
+                "additional": ["Java", "AWS"]
+              },
+              "detailed_scores": {
+                "skill_match": 80,
+                "experience_match": 100,
+                "semantic_match": 92
+              },
+              "experience_years": 6,
+              "analysis_timestamp": "2026-03-06T10:30:50Z"
+            }
+          ],
+          "total_processed": 20,
+          "processing_time_ms": 45000,
+          "status": "completed"
+        }
+      ]
+    }
+
+Step 8.2: Implement Caching Layer
+  Technologies Used:
+    • services/cacheManager.js - Custom cache
+    • Redis 4.6.8 (optional, for production)
+    • In-memory cache (development)
+  
+  Cache Strategy:
+    • Processed job descriptions cached for 1 hour
+    • Skill database cached for 24 hours
+    • Analysis results cached for 7 days
+    • Cache invalidation on manual update
+  
+  Cache Keys:
+    • "job_desc:{hash}" → Job description
+    • "skills:database" → All skills
+    • "analysis:{id}" → Analysis results
+  
+  Benefits:
+    • Reduces Python process spawns (CPU intensive)
+    • Improves response time by 70-80%
+    • Handles high-frequency requests efficiently
+
+PHASE 9: FRONTEND RESULTS DISPLAY
+================================================================================
+Step 9.1: Fetch Analysis Results
+  Frontend Component: Results.jsx
+  Technologies Used:
+    • React 18.2
+    • Axios - API requests
+    • React Context API - State management
+    • React Router - Navigation
+  
+  API Endpoint: GET /api/analytics/results/:analysisId
+  
+  Request Flow:
+    1. User clicks "View Results" button
+    2. analysisId extracted from URL params
+    3. Axios GET request sent to backend
+    4. Backend retrieves from store.json
+    5. Response sent to frontend
+    6. React component stores in state
+    7. UI re-renders with data
+
+Step 9.2: Render Results Dashboard
+  Frontend Display: Results.jsx
+  Technologies Used:
+    • React Components - JSX rendering
+    • Recharts 2.10.3 - Data visualization
+    • Lucide Icons 0.294.0 - UI icons
+    • CSS - Styling and responsive layout
+  
+  Displayed Information:
+    1. Sorted Candidate List:
+       • Rank #1, #2, #3, etc.
+       • Candidate name and email
+       • Match score (visual bar + percentage)
+       • Classification badge (SUITABLE/PARTIAL/NOT_SUITABLE)
+       • Action buttons (view details, download, shortlist)
+    
+    2. Detailed Candidate View (onClick):
+       • Full match score breakdown
+       • Matched skills (green checkmarks)
+       • Missing skills (red crosses)
+       • Additional skills (blue plus)
+       • Experience level matched
+       • Semantic similarity explanation
+    
+    3. Analytics Charts (Dashboard):
+       • Pie chart: Distribution of classifications
+       • Bar chart: Score distribution
+       • Line chart: Match score trends (historical)
+       • Statistics: Average score, success rate, etc.
+  
+  Visualization Libraries:
+    • Recharts: Responsive, interactive charts
+    • Lucide Icons: 500+ professional icons
+    • CSS Grid/Flexbox: Layout management
+    • Responsive Design: Mobile-friendly (breakpoints at 400px, 768px, 1024px)
+
+Step 9.3: Export & Download Functionality
+  Features Implemented:
+    1. Export as PDF:
+       • Generate formatted PDF report
+       • Include all candidate details
+       • Add charts and visualizations
+       • Download to user device
+    
+    2. Export as CSV:
+       • Spreadsheet-compatible format
+       • Include: Name, Score, Classification, Skills, Contact
+       • Import into Excel/Google Sheets
+    
+    3. Export as JSON:
+       • Raw data export
+       • Full analysis details
+       • Integration with other systems
+
+PHASE 10: DASHBOARD & ANALYTICS
+================================================================================
+Step 10.1: Dashboard Overview
+  Frontend Component: Dashboard.jsx
+  Technologies Used:
+    • React 18.2
+    • Recharts: Charts and visualizations
+    • Lucide Icons: Dashboard icons
+    • Context API: Data management
+    • Axios: Data fetching
+  
+  Displayed Metrics:
+    1. Total Analysis Performed (Recurring)
+    2. Suitable Candidates Found
+    3. Average Match Score
+    4. Processing Time
+    5. Success Rate (Suitable / Total)
+
+Step 10.2: History & Filtering
+  Frontend Component: History.jsx
+  Features:
+    • List all user's past analyses
+    • Filter by:
+      - Date range
+      - Classification type
+      - Score range
+      - Candidate name
+    • Sort by:
+      - Date (newest/oldest)
+      - Score (highest/lowest)
+      - Candidate name
+    • View/Re-analyze past results
+
+PHASE 11: SECURITY & AUTHENTICATION
+================================================================================
+Step 11.1: JWT Token Management
+  Technologies Used:
+    • jsonwebtoken 9.0.2 - Token creation/verification
+    • Middleware: middleware/auth.js
+    • Express middleware chain
+  
+  Token Flow:
+    1. User logs in successfully
+    2. Server generates JWT token:
+       Header: { "alg": "HS256", "typ": "JWT" }
+       Payload: {
+         "user_id": "uuid",
+         "email": "user@email.com",
+         "role": "recruiter",
+         "iat": 1709756445,
+         "exp": 1709760045
+       }
+       Signature: HMAC-SHA256(header.payload, SECRET_KEY)
+    
+    3. Token sent to frontend
+    4. Frontend stores in localStorage
+    5. Token included in every API request:
+       Headers: { "Authorization": "Bearer token..." }
+    6. Backend middleware verifies token signature
+    7. If valid, request processed; if invalid, 401 Unauthorized
+
+Step 11.2: Password Security
+  Technologies Used:
+    • bcryptjs 2.4.3 - Password hashing
+    • Salt rounds: 10 (industry standard)
+  
+  Password Handling:
+    1. User registration: password received
+    2. Generate salt: bcrypt.genSalt(10)
+    3. Hash password: bcrypt.hash(password, salt)
+    4. Store hash in database
+    5. Never store plain text
+    6. Login: bcrypt.compare(provided, stored_hash)
+
+Step 11.3: Input Validation
+  Backend Middleware: middleware/validation.js
+  Technologies Used:
+    • Joi 17.11.0 - Schema validation
+    • Validator 13.11.0 - Utility validators
+  
+  Validation Rules:
+    1. Email validation:
+       Schema: Joi.string().email().required()
+       Pattern: RFC 5322 compliant
+    
+    2. Password validation:
+       Minimum 8 characters
+       At least 1 uppercase
+       At least 1 lowercase
+       At least 1 number
+       At least 1 special character
+    
+    3. Resume file validation:
+       Allowed MIME: application/pdf, application/msword, text/plain
+       Maximum size: 5 MB
+       Magic number check (file signature)
+    
+    4. Job description validation:
+       Minimum 50 characters
+       Maximum 5000 characters
+       No SQL injection patterns
+       No script tags
+
+Step 11.4: Security Headers
+  Backend Middleware: Helmet 7.0.0
+  
+  Headers Applied:
+    • Content-Security-Policy: Prevents XSS attacks
+    • X-Frame-Options: Prevents clickjacking
+    • X-Content-Type-Options: Prevents MIME type sniffing
+    • X-XSS-Protection: Browser XSS filter
+    • Strict-Transport-Security: HTTPS enforcement (HSTS)
+    • Referrer-Policy: Controls referrer information
+    • Permissions-Policy: Controls browser features
+
+Step 11.5: Rate Limiting
+  Technologies Used:
+    • express-rate-limit 6.7.0
+  
+  Rate Limits Applied:
+    • General API limit: 100 requests per 15 minutes
+    • Auth endpoints: 5 requests per 15 minutes
+    • Upload endpoint: 10 requests per hour
+    • Analysis endpoint: 20 requests per hour
+
+PHASE 12: ERROR HANDLING & LOGGING
+================================================================================
+Step 12.1: Logging System
+  Backend Service: middleware/logging.js
+  Technologies Used:
+    • Winston 3.10.0 - Logging framework
+    • Morgan 1.10.0 - HTTP request logging
+    • fs module - File writing
+  
+  Log Levels:
+    • ERROR: Critical issues (file write failures, crashes)
+    • WARN: Warnings (deprecated API use, validation failures)
+    • INFO: General information (API calls, user actions)
+    • DEBUG: Detailed debugging information (variable values, flow)
+  
+  Log Formats:
+    • Console: Colored output for development
+    • File: JSON format for production
+    • Structured: {"timestamp", "level", "message", "metadata"}
+  
+  Log Files:
+    • logs/error.log - Errors only
+    • logs/combined.log - All logs
+    • logs/http.log - HTTP requests
+
+Step 12.2: Error Handling
+  Backend Error Management:
+    1. Try-Catch blocks around async operations
+    2. File upload errors:
+       - ENOENT: File not found
+       - EACCES: Permission denied
+       - EISDIR: Is a directory
+    
+    3. Database errors:
+       - Retry logic (exponential backoff)
+       - Graceful degradation
+    
+    4. AI processing errors:
+       - Python script failures
+       - Process spawn errors
+       - Timeout handling (30 seconds max)
+    
+    5. Client error responses:
+       Status 400: Bad request (validation failed)
+       Status 401: Unauthorized (invalid token)
+       Status 403: Forbidden (insufficient permissions)
+       Status 404: Not found (resource missing)
+       Status 429: Too many requests (rate limited)
+       Status 500: Internal server error
+       Status 503: Service unavailable
+
+Step 12.3: Monitoring & Metrics
+  Technologies Used:
+    • Performance monitoring built-in
+    • Response time tracking
+    • Success/failure rate calculation
+  
+  Metrics Tracked:
+    • Average response time per endpoint
+    • Error rate and types
+    • File upload success rate
+    • AI processing time
+    • Cache hit rate
+    • Active user count
+    • Daily/weekly/monthly statistics
+
+PHASE 13: DEPLOYMENT & DEVOPS
+================================================================================
+Step 13.1: Docker Containerization
+  Technologies Used:
+    • Docker - Container platform
+    • Docker Compose - Multi-container orchestration
+  
+  Container Images:
+    1. Backend Container (Node.js):
+       FROM node:18-alpine
+       Installed packages: express, multer, jwt, bcrypt, etc.
+       Exposed port: 5000
+       Command: node server.js
+    
+    2. Frontend Container (React):
+       Build Stage: npm install, npm run build (Vite)
+       Serve Stage: FROM nginx:alpine
+       Exposed port: 3000 or 80
+       Configuration: nginx.conf for SPA routing
+    
+    3. Python AI Service (Optional):
+       FROM python:3.11-slim
+       Installed: scikit-learn, pandas, numpy, etc.
+       Exposed port: 5001
+
+Step 13.2: Docker Compose Configuration
+  File: docker-compose.yml (development)
+  Services:
+    1. Backend Service:
+       - ENV: NODE_ENV=development
+       - Volumes: backend/ mounted for hot reload
+       - Ports: 5000:5000
+       - Dependencies: Wait for database/redis
+    
+    2. Frontend Service:
+       - ENV: VITE_API_URL=http://localhost:5000
+       - Volumes: frontend-react/ mounted for hot reload
+       - Ports: 5173:5173
+       - Dependencies: Needs backend running
+    
+    3. Data Persistence:
+       - Named volume: hiresmart_data
+       - Mount: backend/data/store.json
+
+  File: docker-compose.prod.yml (production)
+  Additional Services:
+    1. Nginx Reverse Proxy:
+       - Port 80 (HTTP)
+       - Port 443 (HTTPS with SSL)
+       - Load balancing
+       - Static file serving
+    
+    2. Redis Cache:
+       - Port 6379
+       - Data persistence
+       - Queue backend for Bull
+    
+    3. PostgreSQL Database (Optional):
+       - Port 5432
+       - Data volume persistence
+       - Backup strategy
+
+Step 13.3: Environment Configuration
+  Files: .env, .env.example
+  
+  Development Variables (.env.dev):
+    NODE_ENV=development
+    PORT=5000
+    JWT_SECRET=dev-secret-key-change-in-production
+    CORS_ORIGIN=http://localhost:5173,http://localhost:3000
+    LOG_LEVEL=debug
+    DATABASE_URL=file:backend/data/store.json
+    REDIS_URL=redis://localhost:6379
+  
+  Production Variables (.env.prod):
+    NODE_ENV=production
+    PORT=5000
+    JWT_SECRET=<long-random-secret-from-vault>
+    CORS_ORIGIN=https://yourdomain.com
+    LOG_LEVEL=warn
+    DATABASE_URL=postgresql://user:pass@db-host:5432/hiresmart
+    REDIS_URL=redis://:password@redis-host:6379
+    SSL_CERT_PATH=/etc/ssl/certs/cert.pem
+    SSL_KEY_PATH=/etc/ssl/certs/key.pem
+
+Step 13.4: CI/CD Pipeline
+  Technologies Used:
+    • GitHub Actions - CI/CD platform
+    • Jest - Testing framework (backend)
+    • ESLint - Code linting
+    • Prettier - Code formatting
+  
+  Pipeline Stages:
+    1. Code Push → GitHub
+    2. Trigger Workflow:
+       a) Checkout code
+       b) Setup Node.js environment
+       c) Install dependencies
+       d) Run linting (ESLint)
+       e) Run tests (Jest)
+       f) Build frontend (Vite)
+       g) Build backend
+       h) Build Docker images
+       i) Push to registry (Docker Hub/ECR)
+       j) Deploy to production (if tests pass)
+
+Step 13.5: Deployment Targets
+  Option A: Docker Locally
+    $ docker-compose up -d
+    Accessible: http://localhost:3000
+  
+  Option B: Cloud Platforms
+    • AWS ECS: Container orchestration
+    • Google Cloud Run: Serverless containers
+    • Azure Container Instances: Managed containers
+    • Heroku: Platform-as-a-Service (PaaS)
+    • Vercel: Frontend deployment (Next.js, React)
+    • Railway: PaaS with git integration
+  
+  Option C: Traditional Hosting
+    • VPS (DigitalOcean, Linode, Hetzner)
+    • Dedicated Servers
+    • On-Premises installation
+
+TECHNOLOGY STACK SUMMARY
+================================================================================
+
+FRONTEND STACK:
+  Framework:        React 18.2.0
+  Build Tool:       Vite 5.0.8
+  Routing:          React Router DOM 6.20.0
+  HTTP Client:      Axios 1.6.2
+  Charts:           Recharts 2.10.3
+  File Upload:      React Dropzone 14.2.3
+  Icons:            Lucide Icons 0.294.0
+  JWT Decode:       jwt-decode 4.0.0
+  State Management: Context API (built-in)
+  Styling:          CSS3 with CSS Variables
+  Package Manager:  npm or yarn
+  Development:      ESLint, Prettier
+  Testing:          Jest, React Testing Library
+
+BACKEND STACK:
+  Runtime:          Node.js 18+ LTS
+  Web Framework:    Express.js 4.18.2
+  Authentication:   JWT (jsonwebtoken 9.0.2)
+  Password Hash:    bcryptjs 2.4.3
+  File Upload:      Multer 1.4.5-lts.1
+  Validation:       Joi 17.11.0, Validator 13.11.0
+  Security:         Helmet 7.0.0
+  Rate Limiting:    express-rate-limit 6.7.0
+  Logging:          Winston 3.10.0, Morgan 1.10.0
+  Job Queue:        Bull 3.16.0
+  Redis Client:     redis 4.6.8 (optional)
+  Database Client:  mongodb 5.9.0 (optional)
+  File Parsing:     pdf-parse 1.1.1, mammoth 1.6.0, jszip 3.10.1
+  UUID Generation:  uuid 9.0.0
+  Async HTTP:       axios 1.6.2
+  Environment:      dotenv 16.3.1
+  Code Quality:     ESLint, Prettier
+  Testing:          Jest 29.7.0
+  Development:      nodemon 3.0.1
+
+AI/NLP STACK:
+  Language:         Python 3.11
+  ML Library:       scikit-learn (TF-IDF, Cosine Similarity)
+  Text Processing:  Natural Language Toolkit (NLTK)
+  Numerical:        NumPy (matrix operations)
+  Data Analysis:    Pandas (data manipulation)
+  Optional AI:      OpenAI, Hugging Face (for advanced NLP)
+
+INFRASTRUCTURE & DEVOPS:
+  Containerization: Docker 24.0+
+  Orchestration:    Docker Compose 2.20+
+  Web Server:       Nginx (production)
+  Reverse Proxy:    Nginx
+  Process Manager:  PM2 (production Node.js)
+  Cache:            Redis 6.2+
+  SSL/TLS:          Let's Encrypt (free) or Commercial
+  Monitoring:       Custom logging with Winston
+  CI/CD:            GitHub Actions (optional)
+
+DATA FLOW SUMMARY
+================================================================================
+
+User Registration & Login:
+  Frontend Form → Express /api/auth/register → Bcrypt Hash → store.json
+  
+Resume Upload:
+  React Upload → Multer → File Storage → Text Extraction (pdf-parse/mammoth)
+  
+Analysis Processing:
+  Extracted Text → Python Script → Skill Matching → Scoring → Results JSON
+  
+Results Display:
+  Backend Query → React Component → Recharts Visualization → User Browser
+  
+Caching:
+  Job Description → Cache System (1 hour TTL) → Reuse in Subsequent Analyses
+  
+Error Handling:
+  Any Error → Winston Logger → logs/error.log + console output + user notification
+
+================================================================================
+                            PERFORMANCE METRICS
+================================================================================
+
+Expected Performance (Single Resume):
+  • Text Extraction: 100-500ms (depends on file size/format)
+  • Skill Extraction: 200-400ms
+  • Semantic Analysis: 150-300ms
+  • Scoring: 50-100ms
+  • Total per resume: 500-1300ms
+  
+Batch Processing (20 Resumes):
+  • With concurrency (4 workers): 2-5 seconds total
+  • Without concurrency: 10-26 seconds
+  • Speedup: ~5x faster with parallel processing
+
+API Response Times:
+  • Authentication: <50ms
+  • File Upload: 200-800ms (depends on network)
+  • Analysis: 1-5 seconds (batch)
+  • Results Retrieval: <100ms (cached)
+  • Dashboard Load: <500ms
+
+Caching Benefits:
+  • First run: Full processing (500-1300ms per resume)
+  • Cached run: 50-150ms (90% reduction)
+  • Memory savings: ~10-50MB for 100 unique job descriptions
+
+================================================================================
+                            SCALABILITY CONSIDERATIONS
+================================================================================
+
+Current Architecture Limitations:
+  • File-based storage (JSON) not suitable for >10,000 analyses
+  • Single-threaded Python analysis (bottleneck)
+  • In-memory cache limited by RAM (development)
+  • No horizontal scaling in current setup
+
+Scaling Solutions:
+
+  1. Database Migration:
+     JSON → PostgreSQL with full-text search
+     Benefit: Unlimited storage, better querying
+
+  2. Job Queue Enhancement:
+     Current: Bull in-memory
+     Scaled: Redis-backed Bull + multiple workers
+     Benefit: Distributed processing, automatic retry
+
+  3. Microservices:
+     • API Service (Node.js)
+     • AI Service (Python + FastAPI)
+     • Storage Service (Database)
+     • Cache Service (Redis)
+     Benefit: Independent scaling of each component
+
+  4. Horizontal Scaling:
+     • Load Balancer (nginx, HAProxy)
+     • Multiple backend instances
+     • Shared database/cache layer
+     Benefit: Handle 10x-100x more users
+
+================================================================================
+                            SECURITY CHECKLIST
+================================================================================
+
+[ ✓ ] Password hashing with bcryptjs (salt rounds: 10)
+[ ✓ ] JWT token-based authentication (1 hour expiry)
+[ ✓ ] CORS configuration (whitelisted origins)
+[ ✓ ] Input validation (Joi schemas)
+[ ✓ ] Rate limiting (100 req/15min default)
+[ ✓ ] SQL injection prevention (parameterized queries)
+[ ✓ ] XSS protection (Content-Security-Policy header)
+[ ✓ ] CSRF tokens (in production cookies)
+[ ✓ ] File upload validation (MIME type, size, magic numbers)
+[ ✓ ] HTTPS enforcement (Helmet middleware)
+[ ✓ ] Log sensitive data removal (tokens, passwords)
+[ ✓ ] Error message sanitization (no stack traces to users)
+[ ✓ ] Dependency auditing (npm audit)
+[ ✓ ] Environment variables (no secrets in code)
+
+Additional Recommendations:
+  • Implement 2FA (Two-Factor Authentication)
+  • Regular security audits
+  • Penetration testing (quarterly)
+  • Vulnerability scanning (automated)
+  • GDPR compliance for EU users
+  • Data encryption at rest
+  • Regular backup strategy
+
+================================================================================
+                            TROUBLESHOOTING GUIDE
+================================================================================
+
+Common Issues & Solutions:
+
+1. PDF Text Extraction Fails:
+   Cause: Scanned PDF without OCR
+   Solution: Use OCR library (Tesseract) or warn user
+   Technologies: pdf-parse + Tesseract
+
+2. High Memory Usage:
+   Cause: Large batch processing
+   Solution: Implement streaming, increase worker memory
+   Technologies: Bull memory optimization, worker threads
+
+3. Slow Analysis:
+   Cause: No caching, repeated processing
+   Solution: Implement Redis caching
+   Technologies: Redis + cacheManager optimization
+
+4. Authentication Errors:
+   Cause: JWT token expiry
+   Solution: Implement refresh token rotation
+   Technologies: JWT refresh token endpoint
+
+5. File Upload Failures:
+   Cause: Network timeout, file size
+   Solution: Chunked upload, client-side validation
+   Technologies: Multer resumable upload
+
+================================================================================
+                            END OF DETAILED WORKFLOW
+================================================================================

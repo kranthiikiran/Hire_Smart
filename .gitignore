@@ -1,0 +1,76 @@
+# =============================
+# Root dependencies
+# =============================
+node_modules/
+
+# =============================
+# Environment / secrets
+# =============================
+.env
+.env.*
+!.env.example
+backend/.env
+backend/.env.*
+!backend/.env.example
+frontend-react/.env
+frontend-react/.env.*
+!frontend-react/.env.example
+
+# =============================
+# Logs
+# =============================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# =============================
+# Runtime / cache
+# =============================
+*.pid
+*.seed
+*.pid.lock
+.cache/
+.tmp/
+.temp/
+
+# =============================
+# Build outputs
+# =============================
+dist/
+build/
+frontend-react/dist/
+coverage/
+backend/coverage/
+
+# =============================
+# Uploaded/generated data
+# =============================
+uploads/
+backend/uploads/
+
+# =============================
+# OS/editor
+# =============================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# =============================
+# Test artifacts
+# =============================
+*.lcov
+*.tmp
+
+# =============================
+# Python artifacts (if AI scripts run locally)
+# =============================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+venv/

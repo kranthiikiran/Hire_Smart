@@ -1,0 +1,61 @@
+HIRESMART - SOFTWARE DEVELOPMENT LIFE CYCLE (SDLC)
+Date: April 4, 2026
+
+1. Planning and Requirement Analysis
+- Problem: Manual resume screening is slow, inconsistent, and hard to scale.
+- Goal: Build an AI-enabled platform for fast, explainable candidate shortlisting.
+- Scope: Authentication, resume upload, parsing, AI scoring/ranking, dashboard, history, export.
+- Non-functional focus: Security, performance, reliability, portability, maintainability, usability.
+- Deliverables: SRS, feature scope, milestones, risk list.
+
+2. System Design
+- Architecture: React frontend + Node/Express backend + Python/OpenAI AI layer.
+- Data strategy: MongoDB models with JSON fallback.
+- Infrastructure: Docker Compose setup, optional Redis/Bull queue/cache, Nginx for production.
+- Design outputs:
+  - API contracts (auth, analyze, history, stats)
+  - Data models (User, Analysis, ResumeResult)
+  - Validation and error/fallback flow definitions
+  - UI module map (Login, Upload, Results, Dashboard, History)
+
+3. Implementation (Development)
+- Frontend: Build responsive pages and result visualizations.
+- Backend: Implement secure routes, middleware, parsing pipeline, result persistence.
+- AI/NLP: Implement scoring engine, fairness checks, semantic matching, classification.
+- Security implementation: JWT auth, hashing, input validation, secure headers, rate limiting.
+- Deliverables: Working modular codebase with setup scripts and docs.
+
+4. Testing and Quality Assurance
+- Unit and integration tests for authentication, validation, scoring, ranking, and history isolation.
+- Validate edge handling:
+  - Missing job description fallback
+  - Python/AI failure fallback
+  - Redis unavailable direct mode
+  - Invalid uploads and unauthorized access rejection
+- Perform regression checks for scoring thresholds and ranking order.
+- Deliverables: Test reports, bug fixes, verification checklist.
+
+5. Deployment
+- Local and production workflows via Docker and Compose.
+- Environment-specific configuration for dev/prod.
+- API health checks and logging setup.
+- Deliverables: Deployment guides and reproducible runtime setup.
+
+6. Operations and Maintenance
+- Monitor APIs, logs, queue/cache behavior, and model response quality.
+- Patch security and dependency issues.
+- Improve prompts/scoring logic and performance over time.
+- Maintain technical and operational documentation.
+
+7. Continuous Improvement (Current Project State)
+- Completed:
+  - Phase 1 MVP (core flow)
+  - Phase 2 enterprise upgrades (security, AI enhancements, scalability, containerization, testing)
+- Remaining:
+  - Phase 3 production completion (integration hardening, load/performance tuning, production monitoring)
+- Current progress: ~70% overall for enterprise transformation scope.
+- Estimated time to completion: 7-10 focused development days.
+
+Summary
+HireSmart follows a practical iterative SDLC: requirements -> design -> build -> test -> deploy -> maintain,
+with strong emphasis on secure APIs, explainable AI scoring, and production readiness.

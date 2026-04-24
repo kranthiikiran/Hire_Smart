@@ -1,0 +1,438 @@
+HIRESMART PROJECT - REQUIRED DIAGRAMS AND GENERATION CONTENT
+
+Project: HireSmart AI Resume Screening System
+Purpose: This document provides the required diagrams for project report, viva, and implementation documentation, including ready content to generate each diagram.
+
+====================================================================
+1) REQUIRED DIAGRAMS OVERVIEW
+====================================================================
+
+A. Core UML Diagrams (Mandatory)
+1. Use Case Diagram
+2. Sequence Diagram
+3. Activity Diagram
+4. State Chart Diagram
+5. Class Diagram
+6. Component Diagram
+7. Deployment Diagram
+
+B. System Design Diagrams (Strongly Recommended)
+8. System Architecture Diagram
+9. Data Flow Diagram (DFD Level 0 and Level 1)
+10. Entity Relationship Diagram (ERD)
+11. Database Schema Diagram
+12. Process Flowchart (End-to-End Workflow)
+
+C. Testing/Operations Diagrams (Optional but Valuable)
+13. Test Workflow Diagram
+14. CI/CD and Deployment Flow Diagram
+
+Suggested minimum submission set for college project:
+Use Case + Sequence + Activity + State Chart + Deployment + Architecture + DFD + ERD
+
+====================================================================
+2) DIAGRAM GENERATION CONTENT (MERMAID)
+====================================================================
+
+Note: Paste each block into Mermaid Live Editor or markdown mermaid renderer.
+
+--------------------------------------------------------------------
+2.1 USE CASE DIAGRAM (UML)
+--------------------------------------------------------------------
+
+mermaid:
+
+graph TD
+    Recruiter[Recruiter] --> UC1[Login]
+    Recruiter --> UC2[Upload Resume(s)]
+    Recruiter --> UC3[Enter Job Description]
+    Recruiter --> UC4[Run Analysis]
+    Recruiter --> UC5[View Results]
+    Recruiter --> UC6[Add to Shortlist]
+    Recruiter --> UC7[Export Report]
+    Recruiter --> UC8[View Dashboard]
+    Recruiter --> UC9[View History]
+
+    Admin[Admin] --> UC10[Manage Users]
+    Admin --> UC11[View System Logs]
+
+    UC4 --> UC12[Extract Resume Text]
+    UC4 --> UC13[Compute Match Score]
+    UC4 --> UC14[Generate Recommendation]
+
+--------------------------------------------------------------------
+2.2 SEQUENCE DIAGRAM (UML)
+--------------------------------------------------------------------
+
+mermaid:
+
+sequenceDiagram
+    actor R as Recruiter
+    participant FE as Frontend (React)
+    participant BE as Backend API (Express)
+    participant NLP as AI/Scoring Service
+    participant DB as MongoDB
+
+    R->>FE: Submit job details + resume files
+    FE->>BE: POST /api/analyze/batch
+    BE->>BE: Validate token and payload
+    BE->>NLP: Parse and analyze resumes
+    NLP-->>BE: Score + matched/missing skills + classification
+    BE->>DB: Save analysis result
+    DB-->>BE: Save confirmation
+    BE-->>FE: Return structured analysis
+    FE-->>R: Render rankings, insights, shortlist actions
+
+--------------------------------------------------------------------
+2.3 ACTIVITY DIAGRAM (UML)
+--------------------------------------------------------------------
+
+mermaid:
+
+flowchart TD
+    A[Start] --> B[Login]
+    B --> C{Authenticated?}
+    C -- No --> D[Show Auth Error]
+    D --> B
+    C -- Yes --> E[Upload Resume(s)]
+    E --> F[Enter Job Description]
+    F --> G[Submit for Analysis]
+    G --> H{Input Valid?}
+    H -- No --> I[Show Validation Error]
+    I --> E
+    H -- Yes --> J[Extract Resume Text]
+    J --> K[Compute Skills/Experience Match]
+    K --> L[Generate Score + Classification]
+    L --> M[Store Result]
+    M --> N[Show Result Dashboard]
+    N --> O{Add Candidate to Shortlist?}
+    O -- Yes --> P[Update Shortlist]
+    O -- No --> Q[End]
+    P --> R{Export Report?}
+    R -- Yes --> S[Generate Report File]
+    R -- No --> Q
+    S --> Q
+
+--------------------------------------------------------------------
+2.4 STATE CHART DIAGRAM (UML)
+--------------------------------------------------------------------
+
+mermaid:
+
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> InputValidated: Submit request
+    InputValidated --> Processing: Validation success
+    InputValidated --> Failed: Validation failed
+    Processing --> Completed: Analysis success
+    Processing --> Failed: Parsing/Scoring error
+    Failed --> Idle: Retry
+    Completed --> Idle: New analysis
+
+--------------------------------------------------------------------
+2.5 CLASS DIAGRAM (UML)
+--------------------------------------------------------------------
+
+mermaid:
+
+classDiagram
+    class User {
+      +String id
+      +String email
+      +String passwordHash
+      +String role
+      +Date createdAt
+      +login()
+      +logout()
+    }
+
+    class Analysis {
+      +String id
+      +String userId
+      +String jobTitle
+      +String jobDescription
+      +Number score
+      +String classification
+      +Array matchedSkills
+      +Array missingSkills
+      +Date createdAt
+      +saveResult()
+    }
+
+    class Resume {
+      +String id
+      +String candidateName
+      +String fileName
+      +String extractedText
+      +parse()
+    }
+
+    class ScoringService {
+      +analyzeResume()
+      +extractSkills()
+      +calculateScore()
+      +generateSummary()
+    }
+
+    class ReportService {
+      +generateCandidateReport()
+      +exportShortlistReport()
+    }
+
+    User "1" --> "many" Analysis : creates
+    Analysis "1" --> "many" Resume : includes
+    Analysis --> ScoringService : uses
+    Analysis --> ReportService : exports
+
+--------------------------------------------------------------------
+2.6 COMPONENT DIAGRAM (UML)
+--------------------------------------------------------------------
+
+mermaid:
+
+flowchart LR
+    UI[Frontend UI\nReact + Vite] --> API[Backend API\nExpress]
+    API --> AUTH[Auth Module\nJWT + bcrypt]
+    API --> ANALYZE[Analysis Module]
+    ANALYZE --> PARSER[Resume Parser]
+    ANALYZE --> SCORER[AI/Scoring Engine]
+    API --> STORE[(MongoDB)]
+    API --> QUEUE[Queue Layer\nBull/Redis Optional]
+    API --> REPORT[Report Export Service]
+
+--------------------------------------------------------------------
+2.7 DEPLOYMENT DIAGRAM (UML)
+--------------------------------------------------------------------
+
+mermaid:
+
+flowchart TB
+    Client[Client Browser\nRecruiter] --> Web[Frontend App\nReact Build]
+    Web --> Server[Application Server\nNode.js + Express]
+    Server --> AI[AI Service\nPython/Hybrid]
+    Server --> DB[(MongoDB)]
+    Server --> Redis[(Redis Optional)]
+    Server --> Storage[File Storage\nLocal/Cloud]
+
+--------------------------------------------------------------------
+2.8 SYSTEM ARCHITECTURE DIAGRAM
+--------------------------------------------------------------------
+
+mermaid:
+
+flowchart LR
+    A[Presentation Layer\nLogin, Upload, Results, Dashboard] --> B[API Layer\nAuth, Analyze, History, Stats]
+    B --> C[Business Logic Layer\nValidation, Parsing, Scoring, Ranking]
+    C --> D[Data Layer\nMongoDB + Logs + Files]
+    C --> E[Integration Layer\nAI APIs, Queue, Export]
+
+--------------------------------------------------------------------
+2.9 DATA FLOW DIAGRAM (DFD LEVEL 0)
+--------------------------------------------------------------------
+
+mermaid:
+
+flowchart LR
+    U[Recruiter] --> P0[HireSmart Resume Screening System]
+    P0 --> U
+    P0 --> D1[(User DB)]
+    P0 --> D2[(Analysis DB)]
+    P0 --> D3[(Reports Storage)]
+
+--------------------------------------------------------------------
+2.10 DATA FLOW DIAGRAM (DFD LEVEL 1)
+--------------------------------------------------------------------
+
+mermaid:
+
+flowchart TD
+    U[Recruiter]
+    P1[1.0 Authenticate User]
+    P2[2.0 Upload & Validate Resumes]
+    P3[3.0 Parse Resume Text]
+    P4[4.0 Analyze & Score]
+    P5[5.0 Store & Render Results]
+    P6[6.0 Shortlist & Export]
+
+    D1[(Users)]
+    D2[(Analyses)]
+    D3[(Reports)]
+
+    U --> P1
+    P1 --> D1
+    P1 --> U
+
+    U --> P2
+    P2 --> P3
+    P3 --> P4
+    P4 --> P5
+    P5 --> D2
+    P5 --> U
+
+    U --> P6
+    P6 --> D3
+    P6 --> U
+
+--------------------------------------------------------------------
+2.11 ENTITY RELATIONSHIP DIAGRAM (ERD)
+--------------------------------------------------------------------
+
+mermaid:
+
+erDiagram
+    USER ||--o{ ANALYSIS : creates
+    ANALYSIS ||--o{ RESUME : contains
+    ANALYSIS ||--o{ SHORTLIST_ITEM : produces
+
+    USER {
+      string id PK
+      string email
+      string passwordHash
+      string role
+      datetime createdAt
+    }
+
+    ANALYSIS {
+      string id PK
+      string userId FK
+      string jobTitle
+      string jobDescription
+      float score
+      string classification
+      datetime createdAt
+    }
+
+    RESUME {
+      string id PK
+      string analysisId FK
+      string candidateName
+      string fileName
+      text extractedText
+    }
+
+    SHORTLIST_ITEM {
+      string id PK
+      string analysisId FK
+      string candidateName
+      float score
+      string status
+    }
+
+--------------------------------------------------------------------
+2.12 DATABASE SCHEMA RELATION DIAGRAM
+--------------------------------------------------------------------
+
+mermaid:
+
+flowchart LR
+    Users[(users)] -->|userId| Analyses[(analyses)]
+    Analyses -->|analysisId| Resumes[(resumes)]
+    Analyses -->|analysisId| Shortlist[(shortlist)]
+    Analyses -->|analysisId| Reports[(reports)]
+
+--------------------------------------------------------------------
+2.13 END-TO-END PROCESS FLOWCHART
+--------------------------------------------------------------------
+
+mermaid:
+
+flowchart TD
+    A[User Login] --> B[Select Job Role / Enter JD]
+    B --> C[Upload Resume(s)]
+    C --> D[Backend Validation]
+    D --> E[Resume Parsing]
+    E --> F[Skill + Experience Matching]
+    F --> G[Compute Score]
+    G --> H[Classify Candidate]
+    H --> I[Display Results]
+    I --> J[Add to Shortlist]
+    J --> K[Export Report]
+    K --> L[End]
+
+====================================================================
+3) ALTERNATIVE CONTENT (PLANTUML) - USE CASE + SEQUENCE
+====================================================================
+
+Use Case (PlantUML):
+
+@startuml
+left to right direction
+actor Recruiter
+actor Admin
+
+rectangle HireSmart {
+  usecase "Login" as UC1
+  usecase "Upload Resume" as UC2
+  usecase "Enter Job Description" as UC3
+  usecase "Run Analysis" as UC4
+  usecase "View Results" as UC5
+  usecase "Add to Shortlist" as UC6
+  usecase "Export Report" as UC7
+  usecase "View Dashboard" as UC8
+  usecase "Manage Users" as UC9
+}
+
+Recruiter --> UC1
+Recruiter --> UC2
+Recruiter --> UC3
+Recruiter --> UC4
+Recruiter --> UC5
+Recruiter --> UC6
+Recruiter --> UC7
+Recruiter --> UC8
+Admin --> UC9
+@enduml
+
+Sequence (PlantUML):
+
+@startuml
+actor Recruiter
+participant Frontend
+participant Backend
+participant ScoringService
+database MongoDB
+
+Recruiter -> Frontend: Submit JD + resumes
+Frontend -> Backend: POST /api/analyze/batch
+Backend -> Backend: Validate token and payload
+Backend -> ScoringService: Analyze resumes
+ScoringService --> Backend: Scores + insights
+Backend -> MongoDB: Save analysis
+MongoDB --> Backend: Saved
+Backend --> Frontend: Return response
+Frontend --> Recruiter: Show rankings and shortlist options
+@enduml
+
+====================================================================
+4) WHAT TO INCLUDE IN FINAL REPORT (FIGURE LIST)
+====================================================================
+
+Figure 4.1 Use Case Diagram
+Figure 4.2 Sequence Diagram
+Figure 4.3 Activity Diagram
+Figure 4.4 State Chart Diagram
+Figure 4.5 Class Diagram
+Figure 4.6 Component Diagram
+Figure 4.7 Deployment Diagram
+Figure 4.8 System Architecture
+Figure 4.9 DFD Level 0
+Figure 4.10 DFD Level 1
+Figure 4.11 ER Diagram
+Figure 4.12 End-to-End Flowchart
+
+====================================================================
+5) QUICK TOOLING GUIDE
+====================================================================
+
+For Mermaid:
+- Mermaid Live Editor: https://mermaid.live
+- Markdown preview in VS Code with Mermaid extension
+
+For PlantUML:
+- PlantUML Online Server
+- VS Code PlantUML extension
+
+Recommendation:
+Use Mermaid for fast report-ready diagrams and PlantUML only if your guide specifically requests UML syntax standards.
+
+END OF FILE

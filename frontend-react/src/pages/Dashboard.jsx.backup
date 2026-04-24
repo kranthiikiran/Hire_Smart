@@ -1,0 +1,1317 @@
+import { useState, useEffect } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
+import api from '../utils/api'
+import {
+  FileText,
+  TrendingUp,
+  Users,
+  CheckCircle,
+  Upload as UploadIcon,
+  ArrowRight,
+  Eye,
+  Award,
+  Trophy
+} from 'lucide-react'
+import { 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
+  PieChart, Pie, Cell, Legend,
+  LineChart, Line, AreaChart, Area
+} from 'recharts'
+
+const Dashboard = () => {
+  const { user } = useAuth()
+  const [analyses, setAnalyses] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [searchParams] = useSearchParams()
+
+  const normalizedRole = String(user?.role || '').trim().toLowerCase()
+  const isRecruiterView = normalizedRole === 'employer' || normalizedRole === 'recruiter' || normalizedRole === 'admin'
+
+  useEffect(() => {
+    const fetchAnalyses = async () => {
+      try {
+        setLoading(true)
+        const response = await api.get('/api/analyses')
+        setAnalyses(response.data || [])
+        setError('')
+      } catch (err) {
+        setError('Failed to load analyses. Please try again.')
+        setAnalyses([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchAnalyses()
+  }, [searchParams])
+
+  // Calculate dashboard statistics
+  const calculateStats = () => {
+    if (!analyses || analyses.length === 0) {
+      return {
+        totalResumes: 0,
+        topMatchScore: 0,
+        averageScore: 0,
+        shortlistedCandidates: 0,
+        recentAnalyses: [],
+        scoreDistribution: [],
+        analyticsData: []
+      }
+    }
+
+    let totalResumes = 0
+    let topMatchScore = 0
+    let totalScore = 0
+    let shortlistedCandidates = 0
+    const allCandidates = []
+    const scoreRanges = { '0-30': 0, '31-50': 0, '51-70': 0, '71-85': 0, '86-100': 0 }
+    const weeklyData = {}
+
+    analyses.forEach((analysis) => {
+      if (analysis.results && Array.isArray(analysis.results)) {
+        totalResumes += analysis.results.length
+        analysis.results.forEach((result) => {
+          const score = result.overallScore || 0
+          totalScore += score
+          topMatchScore = Math.max(topMatchScore, score)
+          if (score >= 70) {
+            shortlistedCandidates++
+          }
+          
+          // Score distribution
+          if (score <= 30) scoreRanges['0-30']++
+          else if (score <= 50) scoreRanges['31-50']++
+          else if (score <= 70) scoreRanges['51-70']++
+          else if (score <= 85) scoreRanges['71-85']++
+          else scoreRanges['86-100']++
+
+          allCandidates.push({
+            name: result.candidateName || 'Unknown',
+            score: score,
+            skillsMatch: result.skillsMatch || 0,
+            jobTitle: analysis.jobTitle,
+            analysisId: analysis.id,
+            createdAt: analysis.createdAt
+          })
+        })
+
+        // Weekly analytics
+        const date = new Date(analysis.createdAt)
+        const weekKey = `Week ${Math.ceil(date.getDate() / 7)}`
+        weeklyData[weekKey] = (weeklyData[weekKey] || 0) + analysis.results.length
+      }
+    })
+
+    const averageScore = totalResumes > 0 ? Math.round(totalScore / totalResumes) : 0
+
+    // Format score distribution for pie chart
+    const scoreDistribution = [
+      { name: 'Excellent (86-100%)', value: scoreRanges['86-100'], color: '#22C55E' },
+      { name: 'Good (71-85%)', value: scoreRanges['71-85'], color: '#FACC15' },
+      { name: 'Average (51-70%)', value: scoreRanges['51-70'], color: '#3B82F6' },
+      { name: 'Below Average (31-50%)', value: scoreRanges['31-50'], color: '#F59E0B' },
+      { name: 'Poor (0-30%)', value: scoreRanges['0-30'], color: '#EF4444' }
+    ].filter(item => item.value > 0)
+
+    // Format weekly data for bar chart
+    const analyticsData = Object.entries(weeklyData).map(([week, count]) => ({
+      week,
+      resumes: count
+    }))
+
+    return {
+      totalResumes,
+      topMatchScore: Math.round(topMatchScore),
+      averageScore,
+      shortlistedCandidates,
+      recentAnalyses: analyses.slice(0, 10),
+      topCandidates: allCandidates.sort((a, b) => b.score - a.score).slice(0, 5),
+      scoreDistribution,
+      analyticsData,
+      totalJobs: analyses.length
+    }
+  }
+
+  const stats = calculateStats()
+
+  if (loading) {
+    return (
+      <div className="dashboard">
+        <div className="loading-state">
+          <div className="spinner"></div>
+          <p>Loading your dashboard...</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="dashboard">
+      {/* Header */}
+      <div className="dashboard-header">
+        <div>
+          <h1 className="dashboard-title">Analytics Dashboard</h1>
+          <p className="dashboard-subtitle">AI-Powered Resume Screening Insights</p>
+        </div>
+        {isRecruiterView && (
+          <Link to="/upload" className="btn btn-primary-nav">
+            <UploadIcon size={18} />
+            New Analysis
+          </Link>
+        )}
+      </div>
+
+      {/* Stats Cards */}
+      <div className="stats-grid">
+        <div className="stat-card">
+          <div className="stat-icon">
+            <FileText size={24} />
+          </div>
+          <div className="stat-content">
+            <div className="stat-label">Total Resumes Analyzed</div>
+            <div className="stat-value">{stats.totalResumes}</div>
+            <div className="stat-meta">Across {stats.totalJobs} job positions</div>
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-icon stat-icon-success">
+            <Award size={24} />
+          </div>
+          <div className="stat-content">
+            <div className="stat-label">Top Match Score</div>
+            <div className="stat-value">{stats.topMatchScore}%</div>
+            <div className="stat-meta">Highest candidate match</div>
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-icon stat-icon-info">
+            <TrendingUp size={24} />
+          </div>
+          <div className="stat-content">
+            <div className="stat-label">Average Score</div>
+            <div className="stat-value">{stats.averageScore}%</div>
+            <div className="stat-meta">Mean match quality</div>
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-icon stat-icon-primary">
+            <CheckCircle size={24} />
+          </div>
+          <div className="stat-content">
+            <div className="stat-label">Shortlisted Candidates</div>
+            <div className="stat-value">{stats.shortlistedCandidates}</div>
+            <div className="stat-meta">Score ≥ 70%</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Charts Section */}
+      {stats.scoreDistribution.length > 0 && (
+        <div className="charts-grid">
+          {/* Score Distribution Pie Chart */}
+          <div className="chart-card">
+            <div className="chart-header">
+              <h3 className="chart-title">
+                <Award size={20} />
+                Score Distribution
+              </h3>
+              <span className="chart-subtitle">{stats.totalResumes} candidates analyzed</span>
+            </div>
+            <ResponsiveContainer width="100%" height={350}>
+              <PieChart>
+                <Pie
+                  data={stats.scoreDistribution}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={true}
+                  label={({ name, percent }) => `${(percent * 100).toFixed(0)}%`}
+                  outerRadius={100}
+                  innerRadius={60}
+                  fill="#8884d8"
+                  dataKey="value"
+                  paddingAngle={3}
+                >
+                  {stats.scoreDistribution.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip 
+                  contentStyle={{
+                    background: 'var(--bg-card)',
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    borderRadius: 'var(--radius-lg)',
+                    color: 'var(--text-primary)',
+                    boxShadow: 'var(--shadow-md)'
+                  }}
+                />
+                <Legend 
+                  wrapperStyle={{
+                    paddingTop: '24px',
+                    fontSize: '0.875rem'
+                  }}
+                  formatter={(value, entry) => (
+                    <span style={{ color: 'var(--text-secondary)' }}>
+                      {entry.payload.name} ({entry.payload.value})
+                    </span>
+                  )}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Weekly Activity Bar Chart */}
+          {stats.analyticsData.length > 0 && (
+            <div className="chart-card">
+              <div className="chart-header">
+                <h3 className="chart-title">
+                  <TrendingUp size={20} />
+                  Resume Processing Activity
+                </h3>
+                <span className="chart-subtitle">Weekly breakdown</span>
+              </div>
+              <ResponsiveContainer width="100%" height={350}>
+                <BarChart data={stats.analyticsData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.08)" />
+                  <XAxis 
+                    dataKey="week" 
+                    stroke="var(--text-tertiary)"
+                    style={{ fontSize: '0.875rem' }}
+                  />
+                  <YAxis 
+                    stroke="var(--text-tertiary)"
+                    style={{ fontSize: '0.875rem' }}
+                    label={{ value: 'Resumes', angle: -90, position: 'insideLeft', style: { fill: 'var(--text-tertiary)' } }}
+                  />
+                  <Tooltip 
+                    contentStyle={{
+                      background: 'var(--bg-card)',
+                      border: '1px solid rgba(255, 255, 255, 0.12)',
+                      borderRadius: 'var(--radius-lg)',
+                      color: 'var(--text-primary)',
+                      boxShadow: 'var(--shadow-md)'
+                    }}
+                    cursor={{ fill: 'rgba(250, 204, 21, 0.08)' }}
+                  />
+                  <Bar 
+                    dataKey="resumes" 
+                    fill="url(#colorGradient)" 
+                    radius={[8, 8, 0, 0]}
+                    maxBarSize={80}
+                    label={{ position: 'top', fill: 'var(--accent)', fontSize: 12, fontWeight: 'bold' }}
+                  />
+                  <defs>
+                    <linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#FACC15" stopOpacity={1}/>
+                      <stop offset="100%" stopColor="#F59E0B" stopOpacity={0.85}/>
+                    </linearGradient>
+                  </defs>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          {/* Score Trend Line Chart */}
+          {stats.topCandidates.length > 0 && (
+            <div className="chart-card chart-card-wide">
+              <div className="chart-header">
+                <h3 className="chart-title">
+                  <Users size={20} />
+                  Top 5 Candidates Comparison
+                </h3>
+                <span className="chart-subtitle">Performance overview</span>
+              </div>
+              <ResponsiveContainer width="100%" height={350}>
+                <AreaChart data={stats.topCandidates} margin={{ top: 20, right: 30, left: 0, bottom: 60 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.08)" />
+                  <XAxis 
+                    dataKey="name" 
+                    stroke="var(--text-tertiary)"
+                    style={{ fontSize: '0.875rem' }}
+                    angle={-15}
+                    textAnchor="end"
+                    height={70}
+                  />
+                  <YAxis 
+                    stroke="var(--text-tertiary)"
+                    style={{ fontSize: '0.875rem' }}
+                    domain={[0, 100]}
+                    label={{ value: 'Match Score %', angle: -90, position: 'insideLeft', style: { fill: 'var(--text-tertiary)' } }}
+                  />
+                  <Tooltip 
+                    contentStyle={{
+                      background: 'var(--bg-card)',
+                      border: '1px solid rgba(255, 255, 255, 0.12)',
+                      borderRadius: 'var(--radius-lg)',
+                      color: 'var(--text-primary)',
+                      boxShadow: 'var(--shadow-md)'
+                    }}
+                  />
+                  <defs>
+                    <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.1}/>
+                    </linearGradient>
+                  </defs>
+                  <Area 
+                    type="monotone" 
+                    dataKey="score" 
+                    stroke="#3B82F6" 
+                    strokeWidth={3}
+                    fill="url(#areaGradient)"
+                    dot={{ fill: '#3B82F6', strokeWidth: 2, r: 5 }}
+                    activeDot={{ r: 7 }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Candidate Rankings Table */}
+      <div className="content-section">
+        {error && (
+          <div className="alert alert-error">
+            <span>{error}</span>
+          </div>
+        )}
+
+        {stats.topCandidates && stats.topCandidates.length > 0 ? (
+          <>
+            <div className="section-card">
+              <div className="section-header">
+                <h2 className="section-title">
+                  <Trophy size={22} />
+                  Top Performing Candidates
+                </h2>
+                <span className="badge">{stats.topCandidates.length} ranked</span>
+              </div>
+
+              <div className="table-wrapper">
+                <table className="candidates-table">
+                  <thead>
+                    <tr>
+                      <th>Rank</th>
+                      <th>Candidate Name</th>
+                      <th>Match Score</th>
+                      <th>Skills Match</th>
+                      <th>Job Position</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stats.topCandidates.map((candidate, idx) => (
+                      <tr key={idx} className="candidate-row">
+                        <td className="col-rank">
+                          <div className={`rank-badge ${idx < 3 ? `rank-${idx + 1}` : ''}`}>
+                            {idx + 1}
+                          </div>
+                        </td>
+                        <td className="col-name">{candidate.name}</td>
+                        <td className="col-score">
+                          <div className="score-badge">
+                            {Math.round(candidate.score)}%
+                          </div>
+                        </td>
+                        <td className="col-skills">
+                          <div className="skills-bar">
+                            <div className="skills-fill" style={{ width: `${candidate.skillsMatch}%` }} />
+                          </div>
+                          <span className="skills-text">{Math.round(candidate.skillsMatch)}%</span>
+                        </td>
+                        <td className="col-job">{candidate.jobTitle}</td>
+                        <td className="col-action">
+                          <Link
+                            to={`/results/${candidate.analysisId}`}
+                            className="btn-view"
+                            title="View Full Profile"
+                          >
+                            <Eye size={16} />
+                            View
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Recent Analyses */}
+            <div className="section-card">
+              <div className="section-header">
+                <h2 className="section-title">Recent Analyses</h2>
+                {stats.recentAnalyses.length > 0 && (
+                  <span className="badge">{stats.recentAnalyses.length} analyses</span>
+                )}
+              </div>
+
+              <div className="analyses-list">
+                {stats.recentAnalyses.map((analysis) => (
+                  <Link
+                    key={analysis.id}
+                    to={`/results/${analysis.id}`}
+                    className="analysis-item"
+                  >
+                    <div className="analysis-icon">
+                      <FileText size={20} />
+                    </div>
+                    <div className="analysis-info">
+                      <div className="analysis-job">{analysis.jobTitle}</div>
+                      <div className="analysis-meta">
+                        {analysis.results?.length || 0} resumes • {new Date(analysis.createdAt).toLocaleDateString()}
+                      </div>
+                    </div>
+                    <ArrowRight size={18} className="analysis-arrow" />
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="empty-state">
+            <div className="empty-icon">
+              <FileText size={48} />
+            </div>
+            <h3>No Analyses Yet</h3>
+            <p>Start by uploading resumes for AI-powered screening and analysis</p>
+            {isRecruiterView && (
+              <Link to="/upload" className="btn btn-primary">
+                <UploadIcon size={18} />
+                Upload Resumes
+              </Link>
+            )}
+          </div>
+        )}
+      </div>
+
+      <style>{`
+        .dashboard {
+          padding: 0;
+        }
+
+        /* Loading State */
+        .loading-state {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          min-height: 60vh;
+          gap: 1rem;
+        }
+
+        .spinner {
+          width: 40px;
+          height: 40px;
+          border: 3px solid rgba(255, 255, 255, 0.1);
+          border-top-color: var(--accent);
+          border-radius: 50%;
+          animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+
+        /* Dashboard Header */
+        .dashboard-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 2rem;
+          gap: 2rem;
+        }
+
+        .dashboard-title {
+          font-size: 2rem;
+          font-weight: 700;
+          color: var(--text-primary);
+          margin-bottom: 0.5rem;
+        }
+
+        .dashboard-subtitle {
+          color: var(--text-secondary);
+          font-size: 0.9375rem;
+        }
+
+        .btn-primary-nav {
+          display: flex;
+          align-items: center;
+          gap: 0.625rem;
+          padding: 0.875rem 1.75rem;
+          background: linear-gradient(135deg, var(--accent), #F59E0B);
+          color: var(--bg-dark);
+          text-decoration: none;
+          border-radius: var(--radius-lg);
+          font-weight: 600;
+          font-size: 0.9375rem;
+          transition: all var(--transition);
+          border: none;
+          cursor: pointer;
+        }
+
+        .btn-primary-nav:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 24px rgba(250, 204, 21, 0.2);
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+          gap: 1.25rem;
+          margin-bottom: 2rem;
+        }
+
+        .stat-card {
+          background: var(--bg-card);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: var(--radius-xl);
+          padding: 1.5rem;
+          display: flex;
+          gap: 1.25rem;
+          box-shadow: var(--shadow-sm);
+          transition: all var(--transition);
+        }
+
+        .stat-card:hover {
+          border-color: rgba(255, 255, 255, 0.12);
+          box-shadow: var(--shadow-md);
+          transform: translateY(-2px);
+        }
+
+        .stat-icon {
+          width: 48px;
+          height: 48px;
+          background: linear-gradient(135deg, rgba(250, 204, 21, 0.15), rgba(245, 158, 11, 0.15));
+          border-radius: var(--radius-lg);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--accent);
+          flex-shrink: 0;
+        }
+
+        .stat-content {
+          flex: 1;
+        }
+
+        .stat-label {
+          font-size: 0.8125rem;
+          color: var(--text-tertiary);
+          font-weight: 500;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+          font-size: 2rem;
+          font-weight: 700;
+          color: var(--text-primary);
+          line-height: 1;
+          margin-bottom: 0.375rem;
+        }
+
+        .stat-meta {
+          font-size: 0.8125rem;
+          color: var(--text-tertiary);
+        }
+
+        .stat-card-animated {
+          animation: slideUp 0.4s ease-out backwards;
+        }
+
+        .stat-card:nth-child(1) { animation-delay: 0.1s; }
+        .stat-card:nth-child(2) { animation-delay: 0.2s; }
+        .stat-card:nth-child(3) { animation-delay: 0.3s; }
+        .stat-card:nth-child(4) { animation-delay: 0.4s; }
+
+        @keyframes slideUp {
+          from {
+            opacity: 0;
+            transform: translateY(15px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .stat-icon-primary {
+          background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(37, 99, 235, 0.15));
+          color: var(--info);
+        }
+
+        .stat-icon-success {
+          background: linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(22, 163, 74, 0.15));
+          color: var(--success);
+        }
+
+        .stat-icon-info {
+          background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(37, 99, 235, 0.15));
+          color: var(--info);
+        }
+
+        .stat-icon-warning {
+          background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(217, 119, 6, 0.15));
+          color: var(--warning);
+        }
+
+        .stat-value-wrapper {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          flex-wrap: wrap;
+        }
+
+        .stat-trend {
+          display: flex;
+          align-items: center;
+          gap: 0.25rem;
+          font-size: 0.8125rem;
+          font-weight: 600;
+        }
+
+        .stat-trend.trend-up {
+          color: var(--success);
+        }
+
+        .stat-trend.trend-down {
+          color: var(--danger);
+        }
+
+        .stat-badge {
+          background: linear-gradient(135deg, var(--success), #16A34A);
+          color: white;
+          padding: 0.25rem 0.625rem;
+          border-radius: var(--radius-md);
+          font-size: 0.6875rem;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+
+        .stat-percentage {
+          font-size: 0.9375rem;
+          font-weight: 600;
+          color: var(--accent);
+        }
+
+        /* Analytics Section */
+        .analytics-section {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+          gap: 1.5rem;
+          margin-bottom: 2rem;
+          animation: fadeIn 0.5s ease-out 0.5s backwards;
+        }
+
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .chart-card {
+          background: var(--bg-card);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: var(--radius-xl);
+          padding: 1.75rem;
+          box-shadow: var(--shadow-sm);
+          transition: all var(--transition);
+        }
+
+        .chart-card:hover {
+          border-color: rgba(255, 255, 255, 0.12);
+          box-shadow: var(--shadow-md);
+        }
+
+        .chart-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 1.25rem;
+          padding-bottom: 1rem;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .chart-title {
+          font-size: 1.125rem;
+          font-weight: 700;
+          color: var(--text-primary);
+        }
+
+        .chart-badge {
+          background: rgba(250, 204, 21, 0.1);
+          color: var(--accent);
+          padding: 0.375rem 0.75rem;
+          border-radius: var(--radius-full);
+          font-size: 0.75rem;
+          font-weight: 600;
+        }
+
+        .chart-container {
+          min-height: 280px;
+        }
+
+        /* Insights Section */
+        .insights-section {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+          gap: 1rem;
+          margin-bottom: 2rem;
+          animation: fadeIn 0.5s ease-out 0.6s backwards;
+        }
+
+        .insight-card {
+          background: var(--bg-card);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: var(--radius-lg);
+          padding: 1.25rem;
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          transition: all var(--transition);
+        }
+
+        .insight-card:hover {
+          border-color: rgba(255, 255, 255, 0.15);
+          transform: translateY(-2px);
+          box-shadow: var(--shadow-md);
+        }
+
+        .insight-icon {
+          width: 40px;
+          height: 40px;
+          border-radius: var(--radius-md);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+
+        .insight-primary .insight-icon {
+          background: linear-gradient(135deg, rgba(250, 204, 21, 0.15), rgba(245, 158, 11, 0.15));
+          color: var(--accent);
+        }
+
+        .insight-success .insight-icon {
+          background: linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(22, 163, 74, 0.15));
+          color: var(--success);
+        }
+
+        .insight-info .insight-icon {
+          background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(37, 99, 235, 0.15));
+          color: var(--info);
+        }
+
+        .insight-warning .insight-icon {
+          background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(217, 119, 6, 0.15));
+          color: var(--warning);
+        }
+
+        .insight-content {
+          flex: 1;
+        }
+
+        .insight-label {
+          font-size: 0.75rem;
+          color: var(--text-tertiary);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          font-weight: 600;
+          margin-bottom: 0.375rem;
+        }
+
+        .insight-value {
+          font-size: 1.5rem;
+          font-weight: 700;
+          color: var(--text-primary);
+          line-height: 1;
+          margin-bottom: 0.25rem;
+        }
+
+        .insight-meta {
+          font-size: 0.6875rem;
+          color: var(--text-tertiary);
+          opacity: 0.8;
+        }
+
+        /* Content Section */
+        .content-section {
+          display: flex;
+          flex-direction: column;
+          gap: 1.5rem;
+        }
+
+        .section-card {
+          background: var(--bg-card);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: var(--radius-xl);
+          padding: 2rem;
+          box-shadow: var(--shadow-sm);
+        }
+
+        .section-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 1.5rem;
+          padding-bottom: 1rem;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .section-title {
+          font-size: 1.25rem;
+          font-weight: 700;
+          color: var(--text-primary);
+        }
+
+        .badge {
+          background: rgba(250, 204, 21, 0.1);
+          color: var(--accent);
+          padding: 0.375rem 0.75rem;
+          border-radius: var(--radius-full);
+          font-size: 0.8125rem;
+          font-weight: 500;
+        }
+
+        /* Table */
+        .table-wrapper {
+          overflow-x: auto;
+        }
+
+        .candidates-table {
+          width: 100%;
+          border-collapse: collapse;
+        }
+
+        .candidates-table thead {
+          background: rgba(255, 255, 255, 0.03);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .candidates-table th {
+          padding: 1rem;
+          text-align: left;
+          font-weight: 600;
+          font-size: 0.8125rem;
+          color: var(--text-tertiary);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+
+        .candidates-table tbody tr {
+          border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+          transition: all var(--transition);
+        }
+
+        .candidates-table tbody tr:hover {
+          background: rgba(255, 255, 255, 0.03);
+        }
+
+        .candidates-table td {
+          padding: 1rem;
+          color: var(--text-secondary);
+          font-size: 0.9375rem;
+        }
+
+        .col-name {
+          font-weight: 500;
+          color: var(--text-primary);
+        }
+
+        .col-score {
+          text-align: center;
+        }
+
+        .score-badge {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 56px;
+          height: 40px;
+          background: linear-gradient(135deg, rgba(250, 204, 21, 0.1), rgba(245, 158, 11, 0.1));
+          color: var(--accent);
+          border-radius: var(--radius-md);
+          font-weight: 600;
+          font-size: 0.875rem;
+          border: 1px solid rgba(250, 204, 21, 0.2);
+        }
+
+        .col-status {
+          text-align: center;
+        }
+
+        .status-badge {
+          display: inline-block;
+          padding: 0.375rem 0.875rem;
+          border-radius: var(--radius-full);
+          font-size: 0.75rem;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          white-space: nowrap;
+        }
+
+        .status-badge-excellent {
+          background: linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(22, 163, 74, 0.15));
+          color: var(--success);
+          border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .status-badge-strong {
+          background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(37, 99, 235, 0.15));
+          color: var(--info);
+          border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        .status-badge-good {
+          background: linear-gradient(135deg, rgba(250, 204, 21, 0.15), rgba(245, 158, 11, 0.15));
+          color: var(--accent);
+          border: 1px solid rgba(250, 204, 21, 0.3);
+        }
+
+        .status-badge-fair {
+          background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(217, 119, 6, 0.15));
+          color: var(--warning);
+          border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .status-badge-weak {
+          background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(220, 38, 38, 0.15));
+          color: var(--danger);
+          border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .col-skills {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+        }
+
+        .skills-bar {
+          flex: 0 0 100px;
+          height: 6px;
+          background: rgba(255, 255, 255, 0.08);
+          border-radius: var(--radius-full);
+          overflow: hidden;
+        }
+
+        .skills-fill {
+          height: 100%;
+          background: linear-gradient(90deg, var(--success), #10B981);
+          transition: width 0.3s ease;
+        }
+
+        .skills-text {
+          font-size: 0.8125rem;
+          color: var(--text-tertiary);
+          min-width: 45px;
+          text-align: right;
+        }
+
+        .col-action {
+          text-align: center;
+        }
+
+        .btn-view {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 36px;
+          height: 36px;
+          background: rgba(250, 204, 21, 0.1);
+          border: 1px solid rgba(250, 204, 21, 0.2);
+          border-radius: var(--radius-md);
+          color: var(--accent);
+          cursor: pointer;
+          transition: all var(--transition);
+          text-decoration: none;
+        }
+
+        .btn-view:hover {
+          background: rgba(250, 204, 21, 0.15);
+          border-color: rgba(250, 204, 21, 0.3);
+        }
+
+        /* Analyses List */
+        .analyses-list {
+          display: flex;
+          flex-direction: column;
+          gap: 0.75rem;
+        }
+
+        .analysis-item {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          padding: 1rem;
+          background: rgba(255, 255, 255, 0.03);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: var(--radius-lg);
+          text-decoration: none;
+          transition: all var(--transition);
+        }
+
+        .analysis-item:hover {
+          background: rgba(255, 255, 255, 0.06);
+          border-color: rgba(255, 255, 255, 0.12);
+          transform: translateX(4px);
+        }
+
+        .analysis-icon {
+          flex-shrink: 0;
+          width: 40px;
+          height: 40px;
+          background: linear-gradient(135deg, rgba(250, 204, 21, 0.15), rgba(245, 158, 11, 0.15));
+          border-radius: var(--radius-md);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--accent);
+        }
+
+        .analysis-info {
+          flex: 1;
+          min-width: 0;
+        }
+
+        .analysis-job {
+          font-weight: 600;
+          color: var(--text-primary);
+          margin-bottom: 0.25rem;
+        }
+
+        .analysis-meta {
+          font-size: 0.8125rem;
+          color: var(--text-tertiary);
+        }
+
+        .analysis-arrow {
+          color: var(--text-tertiary);
+          transition: all var(--transition);
+        }
+
+        .analysis-item:hover .analysis-arrow {
+          color: var(--accent);
+          transform: translateX(4px);
+        }
+
+        /* Empty State */
+        .empty-state {
+          text-align: center;
+          padding: 4rem 2rem;
+          background: rgba(255, 255, 255, 0.02);
+          border: 1px dashed rgba(255, 255, 255, 0.12);
+          border-radius: var(--radius-xl);
+        }
+
+        .empty-icon {
+          color: var(--text-tertiary);
+          margin-bottom: 1rem;
+        }
+
+        .empty-state h3 {
+          font-size: 1.25rem;
+          font-weight: 700;
+          color: var(--text-primary);
+          margin-bottom: 0.5rem;
+        }
+
+        .empty-state p {
+          color: var(--text-secondary);
+          font-size: 0.9375rem;
+          max-width: 400px;
+          margin: 0 auto 1.5rem;
+        }
+
+        .btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.625rem;
+          padding: 0.875rem 1.75rem;
+          border-radius: var(--radius-lg);
+          font-weight: 600;
+          font-size: 0.9375rem;
+          border: none;
+          cursor: pointer;
+          transition: all var(--transition);
+          text-decoration: none;
+        }
+
+        .btn-primary {
+          background: linear-gradient(135deg, var(--accent), #F59E0B);
+          color: var(--bg-dark);
+        }
+
+        .btn-primary:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 24px rgba(250, 204, 21, 0.2);
+        }
+
+        /* Alert */
+        .alert {
+          padding: 1rem;
+          border-radius: var(--radius-lg);
+          font-weight: 500;
+          margin-bottom: 1.5rem;
+          border: 1px solid;
+        }
+
+        .alert-error {
+          background: rgba(239, 68, 68, 0.1);
+          border-color: rgba(239, 68, 68, 0.2);
+          color: #EF4444;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+          .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+
+          .analytics-section {
+            grid-template-columns: 1fr;
+          }
+
+          .insights-section {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
+
+        @media (max-width: 768px) {
+          .dashboard-header {
+            flex-direction: column;
+            align-items: stretch;
+          }
+
+          .dashboard-title {
+            font-size: 1.5rem;
+          }
+
+          .btn-primary-nav {
+            justify-content: center;
+          }
+
+          .stats-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+          }
+
+          .stat-card {
+            padding: 1rem;
+          }
+
+          .stat-value {
+            font-size: 1.75rem;
+          }
+
+          .analytics-section {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+          }
+
+          .insights-section {
+            grid-template-columns: 1fr;
+            gap: 0.75rem;
+          }
+
+          .insight-card {
+            padding: 1rem;
+          }
+
+          .insight-value {
+            font-size: 1.25rem;
+          }
+
+          .candidates-table {
+            font-size: 0.875rem;
+          }
+
+          .candidates-table th,
+          .candidates-table td {
+            padding: 0.75rem 0.5rem;
+          }
+
+          .col-name {
+            min-width: 120px;
+          }
+
+          .status-badge {
+            font-size: 0.6875rem;
+            padding: 0.25rem 0.625rem;
+          }
+
+          .section-card {
+            padding: 1rem;
+          }
+
+          .section-header {
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+          }
+
+          .chart-card {
+            padding: 1rem;
+          }
+
+          .chart-container {
+            min-height: 240px;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .dashboard-title {
+            font-size: 1.25rem;
+          }
+
+          .stat-icon {
+            width: 40px;
+            height: 40px;
+          }
+
+          .stat-value {
+            font-size: 1.5rem;
+          }
+
+          .insight-icon {
+            width: 32px;
+            height: 32px;
+          }
+
+          .insight-value {
+            font-size: 1.125rem;
+          }
+
+          .table-wrapper {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+          }
+
+          .candidates-table {
+            min-width: 600px;
+          }
+
+          .chart-container {
+            min-height: 200px;
+          }
+        }
+      `}</style>
+    </div>
+  )
+}
+
+export default Dashboard

@@ -1,0 +1,60 @@
+John Smith
+john.smith@email.com
+(555) 123-4567
+
+Senior Software Engineer
+
+PROFESSIONAL SUMMARY
+Experienced Senior Software Engineer with 7 years of expertise in designing and developing scalable web applications using JavaScript, React, and Node.js. Proven track record of leading development teams and delivering high-quality software solutions on time and within budget.
+
+PROFESSIONAL EXPERIENCE
+
+Senior Software Engineer | Tech Company Inc. | New York, NY | 2021 - Present
+• Led development of microservices architecture serving 2 million+ daily users
+• Architected and implemented React-based frontend reducing load time by 40%
+• Managed team of 5 developers, code reviews, and technical documentation
+• Implemented CI/CD pipeline using GitHub Actions, reducing deployment time from 2 hours to 15 minutes
+• Optimized database queries improving application performance by 35%
+
+Full Stack Developer | Web Solutions Ltd. | Boston, MA | 2019 - 2021
+• Developed full-stack applications using React, Express, and MongoDB
+• Built real-time messaging system handling 100,000+ concurrent users
+• Implemented automated testing achieving 85% code coverage
+• Mentored 3 junior developers on best practices and modern technologies
+
+Junior Developer | StartUp XYZ | Remote | 2017 - 2019
+• Developed responsive web interfaces using React and CSS
+• Created RESTful APIs using Node.js and Express
+• Participated in agile development process with 2-week sprints
+
+TECHNICAL SKILLS
+Languages: JavaScript, Python, TypeScript, SQL, HTML5, CSS3
+Frontend: React, Vue.js, Webpack, Redux, Material-UI
+Backend: Node.js, Express, Django, Flask
+Databases: MongoDB, PostgreSQL, Redis, MySQL
+DevOps: Docker, Kubernetes, AWS, CI/CD, GitHub Actions
+Tools & Platforms: Git, Jira, Jenkins, Linux, VS Code
+
+EDUCATION
+Bachelor of Science in Computer Science
+State University | Graduated: 2017
+GPA: 3.8/4.0
+
+CERTIFICATIONS
+• AWS Certified Solutions Architect - Associate (2022)
+• MongoDB Developer Certification (2021)
+
+PROJECTS
+Resume Screening AI System
+• Developed machine learning-based resume screening application
+• Built REST API for resume parsing and analysis
+• Achieved 92% accuracy in candidate matching
+
+E-commerce Platform
+• Designed and built scalable e-commerce platform
+• Implemented payment gateway integration with Stripe
+• Handled 10,000+ daily transactions
+
+LANGUAGES
+English - Fluent
+Spanish - Intermediate

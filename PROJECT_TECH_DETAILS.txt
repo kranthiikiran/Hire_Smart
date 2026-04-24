@@ -1,0 +1,312 @@
+HIRESMART PROJECT - COMPLETE TECH AND SYSTEM DETAILS
+Generated: 2026-03-06
+
+============================================================
+1) PROJECT OVERVIEW
+============================================================
+Project Name: HireSmart - AI Resume Screening System
+Purpose: End-to-end resume screening using AI/NLP with candidate ranking,
+authentication, dashboard analytics, and history tracking.
+
+Core Workflow:
+1. User registers/logs in.
+2. Recruiter enters job title + job description.
+3. Recruiter uploads resumes (PDF, DOCX, TXT).
+4. Backend extracts text and sends content for NLP analysis.
+5. AI engine computes skill match, semantic similarity, and experience fit.
+6. System ranks candidates and classifies suitability.
+7. Results are shown in dashboard and stored for history/statistics.
+
+
+============================================================
+2) ARCHITECTURE
+============================================================
+Architecture Type: Full-stack web application with AI/NLP processing
+Pattern: REST API + service modules + optional queue processing
+
+Main Layers:
+- Frontend: React application (UI, routing, auth state, upload UI, charts)
+- Backend: Node.js/Express API (auth, uploads, orchestration, persistence)
+- AI/NLP: Python scoring service/script for semantic resume matching
+- Data Layer: MongoDB models (primary) with JSON fallback mode available
+- Queue Layer: Bull + Redis (primary) with direct processing fallback
+- Deployment: Docker + Docker Compose + Nginx for production hosting
+
+
+============================================================
+3) FRONTEND TECHNOLOGIES
+============================================================
+Framework and Build:
+- React 18
+- Vite 5
+
+Routing and State:
+- React Router v6
+- React Context API (AuthContext)
+
+HTTP and Upload:
+- Axios
+- React Dropzone
+
+Charts/UI:
+- Recharts
+- Lucide React icons
+
+Key Frontend Paths:
+- frontend-react/src/App.jsx
+- frontend-react/src/main.jsx
+- frontend-react/src/context/AuthContext.jsx
+- frontend-react/src/services/api.js
+- frontend-react/src/pages/Login.jsx
+- frontend-react/src/pages/Register.jsx
+- frontend-react/src/pages/Upload.jsx
+- frontend-react/src/pages/Results.jsx
+- frontend-react/src/pages/Dashboard.jsx
+- frontend-react/src/pages/History.jsx
+- frontend-react/src/components/PrivateRoute.jsx
+
+Frontend Features:
+- Login/register flow with role selection
+- Protected routes for authenticated pages
+- Drag-and-drop multi-file upload
+- Result cards and ranking views
+- Dashboard analytics charts
+- History browsing and retrieval
+
+
+============================================================
+4) BACKEND TECHNOLOGIES
+============================================================
+Core Runtime:
+- Node.js 18+
+- Express.js
+
+Authentication and Security:
+- jsonwebtoken (JWT access/refresh tokens)
+- bcryptjs (password hashing)
+- helmet (security headers)
+- cors (cross-origin policy)
+- express-rate-limit (request throttling)
+
+Validation, Upload, Logging:
+- Joi (request validation)
+- Multer (multipart file uploads)
+- Morgan (HTTP request logs)
+- Winston (application logging)
+
+Database and Queue:
+- Mongoose (MongoDB ODM)
+- Bull (job queue)
+- ioredis (Redis client)
+
+Document Parsing:
+- pdf-parse (PDF text extraction)
+- mammoth (DOCX text extraction)
+
+Key Backend Paths:
+- backend/server.js
+- backend/routes/auth.js
+- backend/routes/analyze.js
+- backend/models/User.js
+- backend/models/Analysis.js
+- backend/config/database.js
+- backend/services/queueService.js
+- backend/middleware/auth.js
+- backend/middleware/validation.js
+- backend/middleware/logging.js
+
+Backend Features:
+- Token-based auth with refresh flow
+- Role-aware access patterns (recruiter/candidate)
+- File upload handling and validation
+- Batch analysis orchestration
+- Structured logging and global error handlers
+- Health endpoint and graceful shutdown hooks
+
+
+============================================================
+5) AI/NLP TECHNOLOGIES (PYTHON)
+============================================================
+Python Stack:
+- Python 3.8+ (3.11 recommended)
+- scikit-learn (TF-IDF, cosine similarity)
+- NumPy
+- Pandas
+- NLTK
+
+AI/NLP Logic:
+- Resume/job description text preprocessing
+- Skill extraction and matching
+- Semantic similarity using TF-IDF vectors + cosine similarity
+- Experience alignment and weighting
+- Final score calculation and suitability classification
+
+Key AI Paths:
+- ai/resume_match.py
+- ai/scoring_engine.py
+- ai/fairness_engine.py
+- ai/requirements.txt
+
+
+============================================================
+6) DATA STORAGE AND MODELS
+============================================================
+Primary Database:
+- MongoDB
+- Accessed via Mongoose models
+
+Primary Models:
+1. User Model
+   - email
+   - password (hashed)
+   - role
+   - firstName, lastName, company
+   - refreshToken, lastLogin, isActive
+
+2. Analysis Model
+   - userId reference
+   - jobTitle, jobDescription, requiredSkills, experienceLevel
+   - resumes array with per-candidate scoring details
+   - statistics (counts, averages)
+   - processing status and timestamps
+
+Fallback Storage (when DB service unavailable):
+- backend/data/store.json
+
+
+============================================================
+7) BATCH PROCESSING AND PERFORMANCE
+============================================================
+Queue System:
+- Bull queue for batch resume analysis
+- Redis as queue backend (preferred)
+
+Fallback Behavior:
+- If Redis unavailable, processing continues directly in-memory
+
+Performance-Oriented Features:
+- Concurrency-based batch processing
+- Retry and backoff support
+- Processing stats and health visibility
+
+
+============================================================
+8) API ENDPOINTS
+============================================================
+Auth Endpoints:
+- POST /api/auth/register
+- POST /api/auth/login
+- POST /api/auth/refresh
+- POST /api/auth/logout
+- GET  /api/auth/me
+
+Analysis Endpoints:
+- POST /api/analyze/batch
+- GET  /api/analyze/results/:id
+- GET  /api/analyze/history
+- GET  /api/analyze/stats
+
+System Endpoint:
+- GET /api/health
+
+
+============================================================
+9) SECURITY IMPLEMENTATION
+============================================================
+Implemented Security Controls:
+- Password hashing with bcrypt
+- JWT access and refresh token strategy
+- Helmet hardening headers
+- CORS policy enforcement
+- API rate limiting
+- Joi schema validation
+- Protected routes with bearer token checks
+
+
+============================================================
+10) DEPLOYMENT AND ENVIRONMENT
+============================================================
+Containerization and Orchestration:
+- Docker
+- Docker Compose
+- Nginx (frontend serving/reverse proxy for production)
+
+Key Deployment Files:
+- docker-compose.yml
+- docker-compose.prod.yml
+- docker-compose.dev.yml
+- backend/Dockerfile
+- frontend-react/Dockerfile
+- frontend-react/nginx.conf
+
+Automation Scripts:
+- INSTALL.ps1
+- START_NEW.ps1
+- START.ps1
+- START.bat
+
+
+============================================================
+11) SCORING AND CLASSIFICATION SUMMARY
+============================================================
+Scoring Inputs:
+- Skill overlap between resume and job description
+- Semantic similarity of resume content to role requirements
+- Experience relevance
+
+Output Includes:
+- Match score (numeric)
+- Classification label
+- Matched skills and missing skills
+- Candidate ranking position
+
+Typical Classification Buckets:
+- SUITABLE
+- PARTIALLY_SUITABLE
+- NOT_SUITABLE
+
+
+============================================================
+12) PROJECT DOCUMENTATION AVAILABLE
+============================================================
+- DETAILED_WORKFLOW.txt
+- COMPLETE_SETUP_GUIDE.txt
+- TESTING_INTEGRATION_GUIDE.md
+- COMPLETE_SYSTEM_README.md
+- API_RUNNING_STATUS.md
+- DEPLOYMENT_GUIDE.md
+- QUICK_START.md
+- RUNNING_GUIDE.md
+
+
+============================================================
+13) CURRENT RUNTIME NOTES
+============================================================
+Based on latest session state:
+- Backend health endpoint responded successfully.
+- Frontend may run on 3000 or 3001 depending on port availability.
+- Auth API login tested successfully with known valid credentials.
+- Frontend auth flow was aligned to the /api/auth/* route structure.
+- System supports graceful fallback if MongoDB/Redis are not available.
+
+
+============================================================
+14) COMPLETE STACK SUMMARY (SHORT)
+============================================================
+Frontend:
+- React, Vite, React Router, Axios, Dropzone, Recharts
+
+Backend:
+- Node.js, Express, JWT, bcrypt, Joi, Multer, Helmet, CORS,
+  Winston, Morgan, Mongoose, Bull, ioredis, pdf-parse, mammoth
+
+AI/NLP:
+- Python, scikit-learn, NumPy, Pandas, NLTK
+- OpenAI GPT-3.5 (newly integrated for enhanced analysis)
+
+Infrastructure:
+- MongoDB, Redis, Docker, Docker Compose, Nginx
+
+Status:
+- Full-stack integrated and runnable end-to-end.
+- OpenAI enhancement layer added (optional, graceful fallback)

@@ -1,0 +1,69 @@
+JOHN SMITH
+Senior Software Engineer
+Email: john.smith@email.com | Phone: (555) 123-4567
+LinkedIn: linkedin.com/in/johnsmith | GitHub: github.com/johnsmith
+
+PROFESSIONAL SUMMARY
+Highly skilled Senior Software Engineer with 6+ years of experience in full-stack development, specializing in Python, JavaScript, and cloud technologies. Proven track record of designing and implementing scalable applications, leading development teams, and delivering high-quality software solutions. Strong expertise in modern frameworks, RESTful APIs, and machine learning integration.
+
+TECHNICAL SKILLS
+Programming Languages: Python, JavaScript, TypeScript, Java, SQL
+Frontend: React, Vue.js, HTML5, CSS3, Redux
+Backend: Node.js, Express.js, Django, Flask, RESTful APIs
+Databases: PostgreSQL, MongoDB, MySQL, Redis
+Cloud & DevOps: AWS (EC2, S3, Lambda), Docker, Kubernetes, CI/CD, Jenkins
+Machine Learning: Scikit-learn, TensorFlow, Natural Language Processing
+Tools: Git, GitHub, Jira, Agile/Scrum, VS Code
+
+PROFESSIONAL EXPERIENCE
+
+Senior Software Engineer | TechCorp Solutions | 2021 - Present
+• Lead a team of 5 developers in designing and implementing microservices architecture using Node.js and Python
+• Developed RESTful APIs serving 1M+ daily requests with 99.9% uptime
+• Implemented machine learning models for predictive analytics, improving accuracy by 30%
+• Architected and deployed cloud-based solutions on AWS, reducing infrastructure costs by 40%
+• Conducted code reviews and mentored junior developers on best practices
+• Collaborated with cross-functional teams to deliver features ahead of schedule
+
+Software Engineer | Digital Innovations Inc | 2018 - 2021
+• Built responsive web applications using React, Node.js, and MongoDB
+• Designed and optimized database schemas, improving query performance by 50%
+• Integrated third-party APIs and payment gateways for e-commerce platforms
+• Implemented automated testing suites, increasing code coverage to 85%
+• Participated in Agile sprints and delivered consistent high-quality code
+
+Junior Developer | StartUp Labs | 2017 - 2018
+• Developed frontend components using JavaScript, HTML5, and CSS3
+• Assisted in backend development with Python and Django framework
+• Fixed bugs and improved application performance
+• Collaborated with designers to implement pixel-perfect UI designs
+
+EDUCATION
+Bachelor of Science in Computer Science
+State University | Graduated 2017 | GPA: 3.8/4.0
+
+CERTIFICATIONS
+• AWS Certified Solutions Architect - Associate
+• Python Professional Certificate
+• Agile Scrum Master Certification
+
+PROJECTS
+AI Resume Screening System
+• Built an intelligent resume matching system using Python, NLP, and machine learning
+• Implemented TF-IDF vectorization and cosine similarity algorithms for accurate matching
+• Developed RESTful API backend with Node.js and Express.js
+• Created responsive frontend with vanilla JavaScript and modern CSS
+
+E-Commerce Platform
+• Developed full-stack e-commerce application with React and Node.js
+• Integrated Stripe payment gateway and real-time inventory management
+• Deployed on AWS with auto-scaling capabilities
+
+ACHIEVEMENTS
+• Reduced application load time by 60% through optimization
+• Led migration of legacy system to modern cloud architecture
+• Received "Employee of the Year" award for outstanding contributions
+• Published technical blog posts with 10K+ readers
+
+LANGUAGES
+English (Native), Spanish (Conversational)

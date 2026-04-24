@@ -1,0 +1,453 @@
+# ══════════════════════════════════════════════════════════════
+#                   HIRESMART - COMPLETE SETUP GUIDE
+#        AI-Powered Resume Screening System - Full Stack
+# ══════════════════════════════════════════════════════════════
+
+## 📋 TABLE OF CONTENTS
+1. Prerequisites
+2. Quick Installation (Recommended)
+3. Manual Installation
+4. Environment Configuration
+5. Starting the Application
+6. Verifying Installation
+7. Using the System
+8. Troubleshooting
+9. Advanced Configuration
+
+# ══════════════════════════════════════════════════════════════
+#  SECTION 1: PREREQUISITES
+# ══════════════════════════════════════════════════════════════
+
+REQUIRED (Must Have):
+--------------------
+✅ Node.js 18+ LTS          https://nodejs.org/
+✅ Python 3.8+              https://python.org/
+✅ npm (comes with Node.js)
+
+OPTIONAL (Recommended for Production):
+--------------------------------------
+⭐ MongoDB 6.0+             https://www.mongodb.com/try/download/community
+⭐ Redis 6.2+               https://redis.io/download or Docker
+⭐ Docker Desktop           https://www.docker.com/products/docker-desktop
+
+SYSTEM REQUIREMENTS:
+-------------------
+- RAM: Minimum 4GB, Recommended 8GB+
+- Storage: 2GB free space
+- OS: Windows 10+, macOS 10.15+, or Linux (Ubuntu 20.04+)
+
+# ══════════════════════════════════════════════════════════════
+#  SECTION 2: QUICK INSTALLATION (RECOMMENDED)
+# ══════════════════════════════════════════════════════════════
+
+OPTION A: Docker Installation (Easiest - All Services Included)
+---------------------------------------------------------------
+1. Install Docker Desktop from https://www.docker.com/
+
+2. Clone/Download the project:
+   cd path/to/HireSmart_Project
+
+3. Start all services with Docker Compose:
+   docker-compose -f docker-compose.dev.yml up
+
+4. Access the application:
+   Frontend: http://localhost:5173
+   Backend:  http://localhost:5000
+
+Done! All services (MongoDB, Redis, Backend, Frontend) are running.
+
+
+OPTION B: Automated Installation Script (Windows)
+-------------------------------------------------
+1. Open PowerShell as Administrator
+
+2. Navigate to project directory:
+   cd path\to\HireSmart_Project
+
+3. Run installation script:
+   .\INSTALL.ps1
+
+4. Start services:
+   .\START_NEW.ps1
+
+5. Open in browser:
+   http://localhost:5173
+
+# ══════════════════════════════════════════════════════════════
+#  SECTION 3: MANUAL INSTALLATION
+# ══════════════════════════════════════════════════════════════
+
+Step 1: Install Backend Dependencies
+------------------------------------
+cd backend
+npm install
+
+Step 2: Install Python AI Dependencies
+--------------------------------------
+cd ../ai
+pip install -r requirements.txt
+
+Step 3: Install Frontend Dependencies
+-------------------------------------
+cd ../frontend-react
+npm install
+
+Step 4: Configure Environment
+-----------------------------
+cd ../backend
+copy .env.example .env
+
+Edit backend/.env file:
+- Set MONGODB_URI (if using MongoDB)
+- Change JWT_SECRET to a secure random string
+- Configure other settings as needed
+
+Step 5: Create Required Directories
+-----------------------------------
+mkdir -p backend/uploads
+mkdir -p backend/logs
+mkdir -p backend/data
+
+# ══════════════════════════════════════════════════════════════
+#  SECTION 4: ENVIRONMENT CONFIGURATION
+# ══════════════════════════════════════════════════════════════
+
+Backend Environment Variables (backend/.env):
+---------------------------------------------
+
+# Server
+NODE_ENV=development
+PORT=5000
+
+# Database Options:
+
+## Option 1: MongoDB (Recommended for Production)
+MONGODB_URI=mongodb://localhost:27017/hiresmart
+
+## Option 2: MongoDB Atlas (Cloud)
+# MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/hiresmart
+
+## Option 3: No External Database (Uses JSON files)
+# Comment out or remove MONGODB_URI
+
+# Redis (Optional - for job queue)
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=
+QUEUE_CONCURRENCY=4
+
+# Security (IMPORTANT: Change in production!)
+JWT_SECRET=change-this-to-a-long-random-string-in-production
+
+# Frontend URLs
+CORS_ORIGIN=http://localhost:5173,http://localhost:3000
+
+Frontend Environment Variables (frontend-react/.env):
+---------------------------------------------------
+VITE_API_URL=http://localhost:5000
+
+# ══════════════════════════════════════════════════════════════
+#  SECTION 5: STARTING THE APPLICATION
+# ══════════════════════════════════════════════════════════════
+
+METHOD 1: Docker Compose (Recommended)
+--------------------------------------
+docker-compose -f docker-compose.dev.yml up
+
+# To run in background:
+docker-compose -f docker-compose.dev.yml up -d
+
+# To stop:
+docker-compose -f docker-compose.dev.yml down
+
+
+METHOD 2: Automated Script (Windows)
+------------------------------------
+.\START_NEW.ps1
+
+# This will:
+- Start backend on port 5000
+- Start frontend on port 5173
+- Open browser automatically
+
+
+METHOD 3: Manual Start (Each Service Separately)
+------------------------------------------------
+
+Terminal 1 - Start Backend:
+cd backend
+npm run dev
+# Or for production: npm start
+
+Terminal 2 - Start Frontend:
+cd frontend-react
+npm run dev
+
+Terminal 3 - Start MongoDB (if local):
+mongod
+
+Terminal 4 - Start Redis (if local):
+redis-server
+
+# ══════════════════════════════════════════════════════════════
+#  SECTION 6: VERIFYING INSTALLATION
+# ══════════════════════════════════════════════════════════════
+
+Test Backend API:
+----------------
+Open browser or use curl:
+
+# Health check
+curl http://localhost:5000/api/health
+
+# Expected output:
+{
+  "success": true,
+  "status": "healthy",
+  "timestamp": "2026-03-06T...",
+  ...
+}
+
+Test Frontend:
+-------------
+Open browser: http://localhost:5173
+
+You should see the HireSmart login page.
+
+Test Database Connection (if using MongoDB):
+-------------------------------------------
+# Check MongoDB connection in backend logs
+# Should see: "✅ MongoDB connected successfully"
+
+Test Redis Connection (if using Redis):
+--------------------------------------
+# Check backend logs
+# Should see: "✅ Redis connected successfully - Queue enabled"
+
+# ══════════════════════════════════════════════════════════════
+#  SECTION 7: USING THE SYSTEM
+# ══════════════════════════════════════════════════════════════
+
+STEP-BY-STEP USAGE:
+
+1. Register an Account
+   --------------------
+   - Open http://localhost:5173
+   - Click "Register"
+   - Fill in: Email, Password, Role (Recruiter/Candidate)
+   - Click "Create Account"
+
+2. Login
+   -----
+   - Enter your email and password
+   - Click "Login"
+   - You'll be redirected to the Dashboard
+
+3. Create a Job Analysis
+   ---------------------
+   - Navigate to "Upload" page
+   - Enter Job Title (e.g., "Senior React Developer")
+   - Enter Job Description (detailed requirements)
+   - Select Experience Level
+   - Click "Continue" or "Next"
+
+4. Upload Resumes
+   --------------
+   - Drag and drop PDF/DOCX/TXT files
+   - Or click to browse and select files
+   - Maximum 20 files per batch
+   - Maximum 5MB per file
+   - Click "Analyze Resumes"
+
+5. View Results
+   ------------
+   - Wait for analysis to complete (2-30 seconds depending on batch size)
+   - Candidates are automatically ranked by match score
+   - Color-coded classifications:
+     * Green: SUITABLE (75%+)
+     * Yellow: PARTIALLY_SUITABLE (50-75%)
+     * Red: NOT_SUITABLE (<50%)
+
+6. Review Candidate Details
+   ------------------------
+   - Click on any candidate to see:
+     * Matched Skills (green checkmarks)
+     * Missing Skills (red crosses)
+     * Additional Skills (blue plus)
+     * Experience level
+     * Match score breakdown
+     * AI-generated summary
+
+7. Export Results
+   --------------
+   - Download as PDF report
+   - Export as CSV for spreadsheet
+   - Export as JSON for integration
+
+8. View History and Analytics
+   ---------------------------
+   - Dashboard: View overall statistics
+   - History: Browse past analyses
+   - Filter by date, score, classification
+
+# ══════════════════════════════════════════════════════════════
+#  SECTION 8: TROUBLESHOOTING
+# ══════════════════════════════════════════════════════════════
+
+PROBLEM: Backend won't start
+SOLUTION:
+- Check if port 5000 is already in use: netstat -ano | findstr :5000
+- Kill existing process or change PORT in .env
+- Verify Node.js is installed: node --version
+- Check backend/logs/error.log for details
+
+PROBLEM: Frontend won't start
+SOLUTION:
+- Check if port 5173 is in use: netstat -ano | findstr :5173
+- Verify npm dependencies: cd frontend-react && npm install
+- Check console for errors
+- Try: npm run dev --host
+
+PROBLEM: MongoDB connection error
+SOLUTION:
+- If using local MongoDB, ensure mongod is running
+- Check MONGODB_URI in backend/.env
+- System works without MongoDB (uses JSON storage)
+- To disable MongoDB: Remove MONGODB_URI from .env
+
+PROBLEM: Redis connection error
+SOLUTION:
+- Redis is optional - system works without it
+- Queue will process directly without Redis
+- To install Redis: Use Docker or https://redis.io/download
+- Or disable by not setting REDIS_HOST in .env
+
+PROBLEM: Python script errors
+SOLUTION:
+- Verify Python is installed: python --version
+- Install dependencies: cd ai && pip install -r requirements.txt
+- Check Python path in .env: PYTHON_PATH=python
+- Try: python3 instead of python
+
+PROBLEM: Resume text extraction fails
+SOLUTION:
+- Verify file format: Only PDF, DOCX, TXT supported
+- Check file size: Maximum 5MB per file
+- Try with a simple text file first
+- Check backend logs for detailed error
+
+PROBLEM: CORS errors in browser
+SOLUTION:
+- Add frontend URL to CORS_ORIGIN in backend/.env
+- Example: CORS_ORIGIN=http://localhost:5173,http://localhost:3000
+- Restart backend after changing .env
+- Clear browser cache and try again
+
+PROBLEM: JWT authentication fails
+SOLUTION:
+- Verify JWT_SECRET is set in backend/.env
+- Clear browser localStorage (Application tab in DevTools)
+- Re-login to get new token
+- Check token expiry (default: 1 hour)
+
+PROBLEM: File upload "413 Payload Too Large" error
+SOLUTION:
+- Reduce resume file size (compress PDF)
+- Check MAX_FILE_SIZE in .env (default: 5MB)
+- Process fewer files per batch
+
+PROBLEM: Analysis takes too long
+SOLUTION:
+- Enable Redis for queue processing
+- Reduce batch size (process fewer resumes at once)
+- Increase QUEUE_CONCURRENCY in .env (default: 4)
+- Check Python dependencies are properly installed
+
+# ══════════════════════════════════════════════════════════════
+#  SECTION 9: ADVANCED CONFIGURATION
+# ══════════════════════════════════════════════════════════════
+
+Production Deployment:
+---------------------
+1. Set NODE_ENV=production in .env
+2. Use strong JWT_SECRET (64+ random characters)
+3. Use MongoDB Atlas or production MongoDB instance
+4. Enable Redis for better performance
+5. Use Docker Compose production file:
+   docker-compose -f docker-compose.prod.yml up -d
+6. Set up SSL/HTTPS with nginx reverse proxy
+7. Configure firewall rules
+8. Set up automated backups
+9. Enable monitoring and logging
+
+Scaling for High Traffic:
+------------------------
+- Use MongoDB replica set
+- Use Redis cluster
+- Deploy multiple backend instances behind load balancer
+- Use CDN for frontend static files
+- Enable caching headers
+- Use PM2 for process management
+
+Security Hardening:
+------------------
+- Enable HTTPS only
+- Set strong JWT_SECRET
+- Enable rate limiting
+- Use environment-specific CORS origins
+- Enable MongoDB authentication
+- Use Redis password
+- Regularly update dependencies: npm audit fix
+- Enable security headers (already configured with Helmet)
+- Implement 2FA for user accounts (future enhancement)
+
+Monitoring and Logging:
+----------------------
+- Backend logs: backend/logs/combined.log
+- Error logs: backend/logs/error.log
+- Set LOG_LEVEL in .env (debug, info, warn, error)
+- Use external monitoring: DataDog, New Relic, etc.
+- Set up alerts for errors and downtime
+
+Database Backups:
+----------------
+# MongoDB backup
+mongodump --uri="mongodb://localhost:27017/hiresmart" --out=./backups/
+
+# MongoDB restore
+mongorestore --uri="mongodb://localhost:27017/hiresmart" ./backups/hiresmart/
+
+# Automated daily backup script (cron job):
+0 2 * * * mongodump --uri="mongodb://localhost:27017/hiresmart" --out=/backups/$(date +\%Y\%m\%d)/
+
+# ══════════════════════════════════════════════════════════════
+#  QUICK REFERENCE
+# ══════════════════════════════════════════════════════════════
+
+URLS:
+- Frontend:    http://localhost:5173
+- Backend:     http://localhost:5000
+- API Health:  http://localhost:5000/api/health
+- MongoDB:     mongodb://localhost:27017/hiresmart
+- Redis:       redis://localhost:6379
+
+COMMANDS:
+- Install:     .\INSTALL.ps1
+- Start:       .\START_NEW.ps1
+- Docker:      docker-compose -f docker-compose.dev.yml up
+- Test:        npm test (in backend directory)
+
+DOCUMENTATION:
+- Quick Start:         QUICK_START.md
+- Complete Guide:      COMPLETE_SYSTEM_README.md
+- Detailed Workflow:   DETAILED_WORKFLOW.txt
+- API Documentation:   backend/API_DOCUMENTATION.md
+
+SUPPORT:
+- Check documentation files
+- Review error logs: backend/logs/error.log
+- Check console output for detailed errors
+
+# ══════════════════════════════════════════════════════════════
+#  END OF SETUP GUIDE
+# ══════════════════════════════════════════════════════════════

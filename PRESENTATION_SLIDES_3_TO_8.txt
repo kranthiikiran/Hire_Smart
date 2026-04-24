@@ -1,0 +1,199 @@
+HIRESMART PRESENTATION CONTENT (SLIDES 3 TO 8)
+Date: April 1, 2026
+
+============================================================
+SLIDE 3: INTRODUCTION
+============================================================
+
+Project Name:
+HireSmart - AI Resume Screening System
+
+Brief End-User Requirement / Expected Outcome:
+- Recruiters need faster, consistent, and less biased resume shortlisting.
+- Users should be able to upload job details and resumes, then receive ranked candidates with explainable scores.
+
+Abstract / Gist of Problem Statement:
+- Manual screening is slow, subjective, and difficult to scale.
+- Traditional keyword filtering misses contextual fit and skill relevance.
+- Hiring teams need a data-driven system to compare resumes against job requirements.
+
+Objectives (End-User Benefit / Solution Impact):
+- Reduce manual screening effort and recruiter workload.
+- Improve quality and consistency of candidate shortlisting.
+- Speed up time-to-hire through automation.
+- Provide transparent score breakdowns and skill-gap insights.
+- Support role-based workflows for recruiters and candidates.
+
+============================================================
+SLIDE 4: REQUIREMENT
+============================================================
+
+Abstract:
+- Full-stack AI-enabled screening platform with authentication, resume parsing, scoring, ranking, history, and analytics.
+
+Features:
+- User registration/login with JWT.
+- Resume upload (PDF, DOCX, TXT), including batch upload.
+- AI/NLP scoring and classification.
+- Ranked candidate list with matched/missing skills.
+- Dashboard metrics and analysis history.
+- Exportable analysis output.
+- Health, logging, and monitoring support.
+
+Use Cases:
+- Recruiter uploads JD + multiple resumes and gets ranked shortlist.
+- Candidate uploads resume to get fit analysis and improvement cues.
+- User reviews historical analyses and trends.
+- User exports result payloads for reporting/sharing.
+
+Functional Requirements:
+- Auth: register, login, refresh token, logout, protected routes.
+- Upload validation: required job title, file-type and size constraints.
+- Parsing: text extraction from PDF, DOCX, TXT.
+- Analysis: score normalization (0-100), classification, ranking.
+- Result management: history, stats, result-by-ID, ownership checks.
+- Reliability: fallback to alternate analysis path on processing failure.
+
+Non-Functional Requirements:
+- Security: password hashing, JWT validation, rate limiting, secure headers, CORS.
+- Performance: low-latency non-analysis APIs; bounded analysis time.
+- Reliability: graceful degradation when Redis/Python paths are unavailable.
+- Maintainability: modular frontend/backend/AI layers.
+- Portability: local + Docker environments.
+- Usability: clear status/error messaging, responsive UI.
+
+============================================================
+SLIDE 5: DESIGN
+============================================================
+
+Solution Design:
+- Layered architecture: React frontend, Node/Express backend, Python/OpenAI AI layer, MongoDB/JSON persistence, optional Redis queue/cache.
+
+Use Case Workflow:
+- Login -> Enter job title/description -> Upload resumes -> Validate -> Parse text -> AI scoring -> Classification/ranking -> Persist -> Dashboard/history/export.
+
+Architecture Diagram (slide-friendly text):
+- Frontend (React/Vite pages: Login, Dashboard, Upload, Results, History)
+- API Layer (Express routes + auth/validation/logging middleware)
+- Service Layer (resume parser, AI service, queue/cache services)
+- Data Layer (MongoDB models with JSON fallback)
+- Infrastructure (Docker Compose, optional Redis, Nginx for production)
+
+Mockup Screens (available UI modules):
+- Login/Register
+- Dashboard analytics
+- Upload and drag-drop analysis
+- Ranked results cards
+- History view
+
+Database Design:
+- User entity: email, hashed password, role, profile, refresh token metadata, active status, timestamps.
+- Analysis entity: user reference, job metadata, resume results array, stats (counts/average), status, processing time, timestamps.
+- Resume result sub-structure: candidate identity fields, match components, skill gaps, summary, rank.
+
+Class/Module Design:
+- Backend routes: auth and analyze modules.
+- Middleware: auth, validation, logging.
+- Services: AI analysis, resume parsing, queue and cache managers.
+- AI modules: scoring engine and fairness engine.
+
+Technology Stack:
+- Frontend: React,c Vite, Router, Axios, Recharts.
+- Backend: Node.js, Express, Multer, Joi, JWT, bcrypt, Winston, Morgan, Helmet.
+- AI/NLP: Python, scikit-learn, OpenAI chat + embeddings.
+- Infra: Docker, Docker Compose, optional Redis/Bull, Nginx.
+
+============================================================
+SLIDE 6: DEVELOPMENT / IMPLEMENTATION
+============================================================
+
+Coding Considerations:
+- Strict input validation and sanitization.
+- File-type + size checks for secure upload handling.
+- Role-aware access and ownership checks on analysis data.
+- Score normalization and classification consistency.
+- Fallback flows when optional services are unavailable.
+
+Any Exceptions / Edge Handling:
+- Missing/short job description: auto-generated context from job title.
+- Python/AI path failure: fallback processing path.
+- Redis unavailable: direct processing mode.
+- Invalid file or empty upload: explicit validation errors.
+- Auth/token failure: protected routes reject unauthorized requests.
+
+Pseudo Code (high-level):
+- Authenticate user request.
+- Validate job and upload inputs.
+- Extract text from each resume.
+- For each resume, compute skill, semantic, and experience scores.
+- Aggregate into final score and classify.
+- Sort by score, assign rank, persist analysis.
+- Return result set, summary stats, and processing metadata.
+
+Tools Used:
+- VS Code, Node.js, npm, React/Vite, Express.
+- MongoDB/Mongoose, Redis/Bull (optional).
+- Python NLP modules and OpenAI APIs.
+- Docker and Compose for deployment.
+- Jest for testing.
+
+User Roles & Permissions:
+- Recruiter: batch analysis, dashboard, history, result retrieval.
+- Candidate: single-resume analysis flow and feedback.
+- Admin role exists in model; dedicated admin UI scope is limited.
+
+Test Cases (representative):
+- Authentication success/failure, token refresh, unauthorized access.
+- Validation for required fields and file constraints.
+- Score calculation and classification threshold behavior.
+- Batch processing and result ordering.
+- History/stats retrieval and user data isolation.
+
+============================================================
+SLIDE 7: PROJECT STATUS
+============================================================
+
+Phases Completed:
+- Phase 1 MVP: core UI and basic flow completed.
+- Phase 2 Enterprise Infrastructure: security, AI enhancements, scalability, containerization, testing, and documentation largely completed.
+
+Remaining Phases:
+- Phase 3 Production Completion: remaining database/frontend integration hardening, final integration testing, load/performance tuning, production monitoring.
+
+Current Completion Snapshot:
+- Reported state: approximately 70% overall for enterprise transformation scope.
+- Multiple docs also indicate production-ready setup for local/deployment workflows, with some roadmap items still open.
+
+Target Completion Time:
+- Estimated 7-10 focused development days to reach 100% on pending Phase 3 items.
+
+Improvements (already done):
+- JWT auth and security hardening.
+- Weighted AI scoring and fairness framework.
+- Queue/caching infrastructure with graceful fallback.
+- Dockerized deployment and extensive technical documentation.
+- Expanded test coverage and operational guides.
+
+============================================================
+SLIDE 8: LEARNINGS SO FAR
+============================================================
+
+Solution Demo URL:
+- Local frontend demo: http://localhost:5173
+- Local API health: http://localhost:3000/api/health
+- Note: no confirmed public hosted demo URL documented.
+
+New Skills Learned:
+- End-to-end full-stack architecture for AI-assisted HR workflows.
+- Secure API engineering with JWT, validation, and rate limiting.
+- Resume parsing and NLP scoring design.
+- Fairness-aware hiring model practices.
+- Queue-based scalability and caching patterns.
+- Docker-based deployment and DevOps documentation practices.
+- Test-driven backend validation with Jest.
+
+Patent / Publication:
+- No patent or publication evidence documented in project files reviewed.
+
+App in Play Store:
+- Not applicable currently; this is a web application, not an Android app published on Play Store.
