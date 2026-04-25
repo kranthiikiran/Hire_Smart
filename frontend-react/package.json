@@ -2,7 +2,6 @@
   "name": "hiresmart-frontend",
   "version": "1.0.0",
   "private": true,
-  "homepage": "https://kranthiikiran.github.io/Hire_Smart",
   "description": "HireSmart AI Resume Screening - React Frontend",
   "dependencies": {
     "axios": "^1.6.2",
