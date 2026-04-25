@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: hiresmart-backend
+    env: node
+    plan: free
+    branch: main
+    root: backend
+    buildCommand: npm install
+    startCommand: npm start
+
+  - type: static
+    name: hiresmart-frontend
+    env: static
+    plan: free
+    branch: main
+    root: frontend-react
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist

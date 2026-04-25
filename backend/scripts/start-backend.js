@@ -1,9 +1,11 @@
-require('dotenv').config();
+const path = require('path');
+const dotenv = require('dotenv');
+
+dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
 
 const net = require('net');
 const http = require('http');
 const { spawn } = require('child_process');
-const path = require('path');
 
 const port = Number(process.env.PORT || 5500);
 

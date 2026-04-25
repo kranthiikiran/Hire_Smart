@@ -14,7 +14,7 @@ const History = lazy(() => import('./pages/History'))
 function App() {
   return (
     <AuthProvider>
-      <Router>
+      <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <Suspense fallback={<div>Loading...</div>}>
           <Routes>
             <Route path="/login" element={<Login />} />

@@ -1,11 +1,13 @@
-require('dotenv').config();
+const path = require('path');
+const dotenv = require('dotenv');
+
+dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const morgan = require('morgan');
-const path = require('path');
 
 // Import database connection
 const { connectDB } = require('./config/database');
@@ -39,13 +41,6 @@ const allowedOrigins = process.env.CORS_ORIGIN
 
 const localhostOriginPattern = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i;
 
-const isAllowedOrigin = (origin) => {
-  if (!origin) return true;
-  if (allowedOrigins.includes(origin)) return true;
-  // During local development, allow localhost/127.0.0.1 on any port.
-  return localhostOriginPattern.test(origin);
-};
-
 // ===== MIDDLEWARE SETUP =====
 
 // Security headers
@@ -65,7 +60,7 @@ const generalLimiter = rateLimit({
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: Number(process.env.AUTH_RATE_LIMIT_MAX || (process.env.NODE_ENV === 'production' ? 15 : 50)),
+  max: Number(process.env.AUTH_RATE_LIMIT_MAX || (process.env.NODE_ENV === 'production' ? 15 : 25)),
   message: { success: false, message: 'Too many auth attempts, please try again later' },
   skipSuccessfulRequests: true,
   standardHeaders: true,
@@ -76,14 +71,14 @@ const authLimiter = rateLimit({
 app.use('/api/', generalLimiter);
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
-app.use('/api/login', authLimiter);
-app.use('/api/register', authLimiter);
 
 // CORS
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (mobile apps, Postman, etc.)
-    if (isAllowedOrigin(origin)) {
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin) || localhostOriginPattern.test(origin)) {
       callback(null, true);
     } else {
       logger.warn(`CORS blocked origin: ${origin}`);
@@ -129,8 +124,6 @@ app.get('/api/health', (req, res) => {
 
 // API routes
 app.use('/api/auth', authRoutes);
-// Backward compatibility for older clients using /api/login, /api/register, etc.
-app.use('/api', authRoutes);
 app.use('/api/analyze', analyzeRoutes);
 
 // Serve frontend static files in production

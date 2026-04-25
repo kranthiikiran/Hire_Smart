@@ -77,9 +77,8 @@ HireSmart addresses this challenge through an integrated solution that combines:
 - Shortlisting support and report export
 
 The project is structured as a full-stack application with frontend, backend,
-and scoring services, with optional support for Python/OpenAI-based analysis
-pipelines and robust fallback behavior when optional AI dependencies are not
-available.
+and scoring services, with OpenAI-powered analysis pipelines and robust
+fallback behavior when optional runtime dependencies are not available.
 
 The central objective is not only to produce a score, but to provide explainable
 and actionable outputs, such as matched skills, missing skills, role fit,
@@ -492,8 +491,8 @@ Backend Stack:
 - JWT and bcrypt
 
 AI/NLP Stack:
-- Python text processing modules
-- Optional OpenAI API integration
+- OpenAI API for NLP analysis and semantic matching
+- Python support modules for preprocessing and orchestration
 - Hybrid fallback scoring logic
 
 Database:

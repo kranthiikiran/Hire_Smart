@@ -1,9 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
+const mongoose = require('mongoose');
+const { v4: uuidv4 } = require('uuid');
 const { User } = require('../models');
-const { generateAccessToken, generateRefreshToken, verifyToken } = require('../middleware/auth');
+const { generateAccessToken, generateRefreshToken, verifyToken, hashPassword, verifyPassword } = require('../middleware/auth');
 const { logger } = require('../middleware/logging');
+const dataStore = require('../services/dataStore');
 const Joi = require('joi');
 
 // Validation schemas
@@ -21,6 +24,26 @@ const loginSchema = Joi.object({
   password: Joi.string().required()
 });
 
+const isMongoReady = () => process.env.MONGO_AVAILABLE === 'true' && mongoose.connection.readyState === 1;
+
+const normalizeUserRole = (role) => {
+  const normalized = String(role || '').trim().toLowerCase();
+  return normalized === 'employer' ? 'recruiter' : normalized || 'candidate';
+};
+
+const toSafeFallbackUser = (user) => {
+  if (!user) {
+    return null;
+  }
+
+  const safeUser = { ...user };
+  delete safeUser.password_hash;
+  delete safeUser.refreshToken;
+  delete safeUser.passwordHash;
+  delete safeUser.__v;
+  return safeUser;
+};
+
 // Register new user
 router.post('/register', async (req, res) => {
   try {
@@ -36,8 +59,48 @@ router.post('/register', async (req, res) => {
     const email = String(value.email || '').trim().toLowerCase();
     const { password, role, firstName, lastName, company } = value;
 
-    // Check if user already exists
-    const existingUser = await User.findOne({ email });
+    if (isMongoReady()) {
+      // Check if user already exists
+      const existingUser = await User.findOne({ email });
+      if (existingUser) {
+        return res.status(409).json({
+          success: false,
+          message: 'User with this email already exists'
+        });
+      }
+
+      // Create new user (password will be hashed by pre-save middleware)
+      const user = new User({
+        email,
+        password,
+        role,
+        firstName,
+        lastName,
+        company
+      });
+
+      await user.save();
+
+      // Generate tokens
+      const accessToken = generateAccessToken(user);
+      const refreshToken = generateRefreshToken(user);
+
+      // Store refresh token
+      user.refreshToken = refreshToken;
+      await user.save();
+
+      logger.info(`New user registered: ${email} (${role})`);
+
+      return res.status(201).json({
+        success: true,
+        message: 'User registered successfully',
+        user: user.toSafeObject(),
+        accessToken,
+        refreshToken
+      });
+    }
+
+    const existingUser = dataStore.findUserByEmail(email);
     if (existingUser) {
       return res.status(409).json({
         success: false,
@@ -45,32 +108,39 @@ router.post('/register', async (req, res) => {
       });
     }
 
-    // Create new user (password will be hashed by pre-save middleware)
-    const user = new User({
+    const userId = uuidv4();
+    const passwordHash = await hashPassword(password);
+    const timestamp = new Date().toISOString();
+    const fallbackUser = dataStore.createUser({
+      id: userId,
       email,
-      password,
-      role,
+      password_hash: passwordHash,
+      role: normalizeUserRole(role),
       firstName,
       lastName,
-      company
+      company,
+      refreshToken: null,
+      lastLogin: null,
+      isActive: true,
+      createdAt: timestamp,
+      updatedAt: timestamp
     });
 
-    await user.save();
+    const accessToken = generateAccessToken({
+      id: fallbackUser.id,
+      email: fallbackUser.email,
+      role: fallbackUser.role
+    });
+    const refreshToken = generateRefreshToken({ id: fallbackUser.id });
 
-    // Generate tokens
-    const accessToken = generateAccessToken(user);
-    const refreshToken = generateRefreshToken(user);
+    dataStore.updateUserById(fallbackUser.id, { refreshToken });
 
-    // Store refresh token
-    user.refreshToken = refreshToken;
-    await user.save();
+    logger.info(`New user registered: ${email} (${fallbackUser.role})`);
 
-    logger.info(`New user registered: ${email} (${role})`);
-
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: 'User registered successfully',
-      user: user.toSafeObject(),
+      user: toSafeFallbackUser(fallbackUser),
       accessToken,
       refreshToken
     });
@@ -100,12 +170,74 @@ router.post('/login', async (req, res) => {
     const email = String(value.email || '').trim().toLowerCase();
     const password = String(value.password || '');
 
-    // Find user and include password field.
-    // Fallback to case-insensitive lookup for legacy records.
-    let user = await User.findOne({ email }).select('+password');
-    if (!user) {
-      user = await User.findOne({ email: { $regex: `^${email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' } }).select('+password');
+    if (isMongoReady()) {
+      // Find user and include password field.
+      // Fallback to case-insensitive lookup for legacy records.
+      let user = await User.findOne({ email }).select('+password');
+      if (!user) {
+        user = await User.findOne({ email: { $regex: `^${email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' } }).select('+password');
+      }
+      if (!user) {
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid email or password'
+        });
+      }
+
+      // Check if user is active
+      if (!user.isActive) {
+        return res.status(403).json({
+          success: false,
+          message: 'Account is deactivated. Please contact support.'
+        });
+      }
+
+      // Verify password. Legacy records can have missing or malformed hashes,
+      // which should behave like an auth failure instead of a server error.
+      let isPasswordValid = false;
+      try {
+        isPasswordValid = await user.comparePassword(password);
+      } catch (compareError) {
+        logger.warn(`Password verification failed for ${email}: ${compareError.message}`);
+        isPasswordValid = false;
+      }
+      if (!isPasswordValid) {
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid email or password'
+        });
+      }
+
+      // Generate tokens
+      const accessToken = generateAccessToken(user);
+      const refreshToken = generateRefreshToken(user);
+
+      // Store refresh token and update last login without mutating other fields.
+      const lastLogin = new Date();
+      await User.updateOne(
+        { _id: user._id },
+        {
+          $set: {
+            refreshToken,
+            lastLogin
+          }
+        }
+      );
+      user.refreshToken = refreshToken;
+      user.lastLogin = lastLogin;
+
+      logger.info(`User logged in: ${email}`);
+
+      return res.json({
+        success: true,
+        message: 'Login successful',
+        user: user.toSafeObject(),
+        accessToken,
+        refreshToken
+      });
     }
+
+    const user = dataStore.findUserByEmail(email);
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -113,16 +245,20 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Check if user is active
-    if (!user.isActive) {
+    if (user.isActive === false) {
       return res.status(403).json({
         success: false,
         message: 'Account is deactivated. Please contact support.'
       });
     }
 
-    // Verify password
-    const isPasswordValid = await user.comparePassword(password);
+    let isPasswordValid = false;
+    try {
+      isPasswordValid = await verifyPassword(password, user.password_hash);
+    } catch (compareError) {
+      logger.warn(`Password verification failed for ${email}: ${compareError.message}`);
+      isPasswordValid = false;
+    }
     if (!isPasswordValid) {
       return res.status(401).json({
         success: false,
@@ -130,26 +266,24 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Self-heal legacy mixed-case emails for future exact lookups.
-    if (String(user.email || '').trim() !== email) {
-      user.email = email;
-    }
+    const accessToken = generateAccessToken({
+      id: user.id,
+      email: user.email,
+      role: normalizeUserRole(user.role)
+    });
+    const refreshToken = generateRefreshToken({ id: user.id });
 
-    // Generate tokens
-    const accessToken = generateAccessToken(user);
-    const refreshToken = generateRefreshToken(user);
-
-    // Store refresh token and update last login
-    user.refreshToken = refreshToken;
-    user.lastLogin = new Date();
-    await user.save();
+    dataStore.updateUserById(user.id, {
+      refreshToken,
+      lastLogin: new Date().toISOString()
+    });
 
     logger.info(`User logged in: ${email}`);
 
     res.json({
       success: true,
       message: 'Login successful',
-      user: user.toSafeObject(),
+      user: toSafeFallbackUser(user),
       accessToken,
       refreshToken
     });
@@ -185,8 +319,26 @@ router.post('/refresh', async (req, res) => {
       });
     }
 
-    // Find user and verify refresh token matches
-    const user = await User.findById(decoded.id).select('+refreshToken');
+    if (isMongoReady()) {
+      // Find user and verify refresh token matches
+      const user = await User.findById(decoded.id).select('+refreshToken');
+      if (!user || user.refreshToken !== refreshToken) {
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid refresh token'
+        });
+      }
+
+      // Generate new access token
+      const newAccessToken = generateAccessToken(user);
+
+      return res.json({
+        success: true,
+        accessToken: newAccessToken
+      });
+    }
+
+    const user = dataStore.findUserById(decoded.id);
     if (!user || user.refreshToken !== refreshToken) {
       return res.status(401).json({
         success: false,
@@ -194,10 +346,13 @@ router.post('/refresh', async (req, res) => {
       });
     }
 
-    // Generate new access token
-    const newAccessToken = generateAccessToken(user);
+    const newAccessToken = generateAccessToken({
+      id: user.id,
+      email: user.email,
+      role: normalizeUserRole(user.role)
+    });
 
-    res.json({
+    return res.json({
       success: true,
       accessToken: newAccessToken
     });
@@ -217,8 +372,12 @@ router.post('/logout', async (req, res) => {
     const { userId } = req.body;
 
     if (userId) {
-      // Clear refresh token from database
-      await User.findByIdAndUpdate(userId, { refreshToken: null });
+      if (isMongoReady()) {
+        // Clear refresh token from database
+        await User.findByIdAndUpdate(userId, { refreshToken: null });
+      } else {
+        dataStore.updateUserById(userId, { refreshToken: null });
+      }
       logger.info(`User logged out: ${userId}`);
     }
 
@@ -258,7 +417,22 @@ router.get('/me', async (req, res) => {
       });
     }
 
-    const user = await User.findById(decoded.id);
+    if (isMongoReady()) {
+      const user = await User.findById(decoded.id);
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found'
+        });
+      }
+
+      return res.json({
+        success: true,
+        user: user.toSafeObject()
+      });
+    }
+
+    const user = dataStore.findUserById(decoded.id);
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -268,7 +442,7 @@ router.get('/me', async (req, res) => {
 
     res.json({
       success: true,
-      user: user.toSafeObject()
+      user: toSafeFallbackUser(user)
     });
 
   } catch (error) {

@@ -46,11 +46,41 @@ function findUserByEmail(email) {
   return store.users.find((user) => user.email.toLowerCase() === normalizedEmail) || null;
 }
 
+function findUserById(userId) {
+  const store = readStore();
+  const normalizedUserId = String(userId || '').trim();
+  return store.users.find((user) => String(user.id || user._id || '').trim() === normalizedUserId) || null;
+}
+
 function createUser(user) {
   const store = readStore();
   store.users.push(user);
   writeStore(store);
   return user;
+}
+
+function updateUserById(userId, updates = {}) {
+  const store = readStore();
+  const normalizedUserId = String(userId || '').trim();
+  const index = store.users.findIndex((user) => String(user.id || user._id || '').trim() === normalizedUserId);
+
+  if (index === -1) {
+    return null;
+  }
+
+  store.users[index] = {
+    ...store.users[index],
+    ...updates,
+    updatedAt: updates.updatedAt || new Date().toISOString()
+  };
+  writeStore(store);
+  return store.users[index];
+}
+
+function findUserByRefreshToken(refreshToken) {
+  const store = readStore();
+  const normalizedRefreshToken = String(refreshToken || '').trim();
+  return store.users.find((user) => String(user.refreshToken || '').trim() === normalizedRefreshToken) || null;
 }
 
 function saveAnalysis(analysis) {
@@ -98,7 +128,10 @@ function getAnalysesByBatchId(batchId) {
 
 module.exports = {
   findUserByEmail,
+  findUserById,
   createUser,
+  updateUserById,
+  findUserByRefreshToken,
   saveAnalysis,
   getAnalysesByRecruiter,
   getUserAnalyses,

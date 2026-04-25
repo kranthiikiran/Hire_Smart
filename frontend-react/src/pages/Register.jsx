@@ -117,7 +117,11 @@ const Register = () => {
       })
       
       // Provide specific error messages
-      if (err.response?.status === 409) {
+      if (!err.response) {
+        setError('Unable to reach server. Please ensure backend is running on port 5500.')
+      } else if (err.response?.status === 429) {
+        setError('Too many registration attempts. Please wait a few minutes and try again.')
+      } else if (err.response?.status === 409) {
         setError('This email is already registered. Please login or use a different email.')
       } else if (err.response?.status === 400) {
         // Show the actual backend error message
