@@ -106,7 +106,7 @@ describe('Input Validation Middleware', () => {
       const data = {
         candidate_name: 'John Doe',
         file_type: 'application/pdf',
-        file_size: 51 * 1024 * 1024 // 51MB (exceeds 50MB limit)
+        file_size: 11 * 1024 * 1024 // 11MB (exceeds 10MB limit)
       };
       
       const { error } = resumeUploadSchema.validate(data);

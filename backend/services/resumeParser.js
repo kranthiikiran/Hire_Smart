@@ -125,7 +125,7 @@ class ResumeParser {
     const metadata = {
       length: text.length,
       wordCount: text.split(/\s+/).length,
-      hasEmail: /[\w\.-]+@[\w\.-]+\.\w+/.test(text),
+      hasEmail: /[\w.-]+@[\w.-]+\.\w+/.test(text),
       hasPhone: /(\+\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/.test(text),
       hasLinkedIn: /linkedin\.com/i.test(text),
       hasGitHub: /github\.com/i.test(text)

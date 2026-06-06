@@ -176,7 +176,8 @@ const Results = () => {
             })
             return
           }
-        } catch (_) {
+        } catch (error) {
+          // Ignore errors while attempting to resolve fallback results.
         }
 
         setError('Results not found for this analysis')
@@ -360,8 +361,6 @@ const Results = () => {
             const Icon = badge.icon
             const experienceScore = candidate.experienceMatch ?? candidate.experienceRelevance ?? 0
             const semanticScore = candidate.semanticMatch ?? candidate.semanticSimilarity ?? 0
-            const missingSkills = Array.isArray(candidate.skillsMissing) ? candidate.skillsMissing : []
-            const notSelected = candidate.classification === 'partial' || candidate.classification === 'not-suitable'
 
             return (
               <div key={candidate.id} id={`candidate-${candidate.id}`} className="candidate-card">
@@ -479,24 +478,6 @@ const Results = () => {
                         </div>
                       )}
                     </div>
-
-                    {notSelected && (
-                      <div className="not-selected-reason">
-                        <h4 className="reason-heading">
-                          <XCircle size={16} />
-                          Not Selected Reason
-                        </h4>
-                        {missingSkills.length > 0 ? (
-                          <p className="reason-text">
-                            Missing key skills for this role: {missingSkills.join(', ')}.
-                          </p>
-                        ) : (
-                          <p className="reason-text">
-                            Candidate did not meet the required match threshold for this role.
-                          </p>
-                        )}
-                      </div>
-                    )}
 
                     {/* AI Summary */}
                     {candidate.summary && (
@@ -1020,30 +1001,6 @@ const Results = () => {
 
         .skills-heading.missing {
           color: #f87171;
-        }
-
-        .not-selected-reason {
-          padding: 1rem;
-          background: rgba(239, 68, 68, 0.1);
-          border-left: 4px solid rgba(239, 68, 68, 0.85);
-          border-radius: var(--radius-lg);
-        }
-
-        .reason-heading {
-          display: flex;
-          align-items: center;
-          gap: 0.625rem;
-          font-size: 0.95rem;
-          font-weight: 700;
-          color: rgba(254, 202, 202, 0.96);
-          margin-bottom: 0.625rem;
-        }
-
-        .reason-text {
-          margin: 0;
-          color: rgba(254, 226, 226, 0.94);
-          line-height: 1.6;
-          font-size: 0.9375rem;
         }
 
         .candidate-summary {

@@ -1,13 +1,12 @@
-const path = require('path');
-const dotenv = require('dotenv');
-
-dotenv.config({ path: path.resolve(__dirname, '.env') });
+require('dotenv').config();
 
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const morgan = require('morgan');
+const path = require('path');
+const fs = require('fs');
 
 // Import database connection
 const { connectDB } = require('./config/database');
@@ -29,18 +28,16 @@ const PORT = process.env.PORT || 5500;
 // CORS configuration
 const defaultCorsOrigins = [
   'http://localhost:3000',
+  'http://127.0.0.1:3000',
   'http://localhost:5173',
   'http://localhost:5174',
   'http://localhost:5175',
-  'http://localhost:80',
-  'https://hire-smart-mu.vercel.app/'
+  'http://localhost:80'
 ];
 
 const allowedOrigins = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim()).filter(Boolean)
   : defaultCorsOrigins;
-
-const localhostOriginPattern = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i;
 
 // ===== MIDDLEWARE SETUP =====
 
@@ -61,11 +58,9 @@ const generalLimiter = rateLimit({
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: Number(process.env.AUTH_RATE_LIMIT_MAX || (process.env.NODE_ENV === 'production' ? 15 : 25)),
+  max: 5, // 5 auth attempts per window
   message: { success: false, message: 'Too many auth attempts, please try again later' },
-  skipSuccessfulRequests: true,
-  standardHeaders: true,
-  legacyHeaders: false
+  skipSuccessfulRequests: true
 });
 
 // Apply rate limiting
@@ -78,8 +73,8 @@ app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (mobile apps, Postman, etc.)
     if (!origin) return callback(null, true);
-
-    if (allowedOrigins.includes(origin) || localhostOriginPattern.test(origin)) {
+    
+    if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       logger.warn(`CORS blocked origin: ${origin}`);
@@ -127,11 +122,11 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/analyze', analyzeRoutes);
 
-// Serve frontend static files in production
-if (process.env.NODE_ENV === 'production') {
-  const frontendPath = path.join(__dirname, '..', 'frontend-react', 'dist');
+// Serve frontend static files if the built app exists
+const frontendPath = path.join(__dirname, '..', 'frontend-react', 'dist');
+if (fs.existsSync(frontendPath)) {
   app.use(express.static(frontendPath));
-  
+
   app.get('*', (req, res) => {
     res.sendFile(path.join(frontendPath, 'index.html'));
   });
@@ -147,7 +142,7 @@ app.use((req, res) => {
 });
 
 // Global error handler
-app.use((err, req, res, next) => {
+app.use((err, req, res, _next) => {
   logger.error('Unhandled error:', {
     error: err.message,
     stack: err.stack,
@@ -242,7 +237,7 @@ const startServer = async () => {
       gracefulShutdown('UNCAUGHT_EXCEPTION');
     });
     
-    process.on('unhandledRejection', (reason, promise) => {
+    process.on('unhandledRejection', (reason, _promise) => {
       logger.error('❌ Unhandled Promise Rejection:', reason);
       gracefulShutdown('UNHANDLED_REJECTION');
     });

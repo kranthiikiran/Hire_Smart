@@ -205,7 +205,7 @@ function Auth() {
                 </div>
 
                 <div className="mobile-switch">
-                  <p>Don't have an account?</p>
+                  <p>Don&apos;t have an account?</p>
                   <button type="button" onClick={switchToRegister}>Sign Up</button>
                 </div>
               </div>
@@ -280,7 +280,7 @@ function Auth() {
                 </button>
                 
                 <div className="mobile-switch">
-                  <p>Don't have an account?</p>
+                  <p>Don&apos;t have an account?</p>
                   <button type="button" onClick={switchToRegister}>Sign Up</button>
                 </div>
               </form>

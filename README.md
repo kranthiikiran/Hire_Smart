@@ -1,37 +1,20 @@
-# HireSmart
+# HireSmart - AI-Powered Resume Screening System
 
-[![Node.js](https://img.shields.io/badge/Node.js-18%2B-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
-[![React](https://img.shields.io/badge/React-Frontend-61DAFB?logo=react&logoColor=black)](https://react.dev/)
-[![Express](https://img.shields.io/badge/Express-Backend-000000?logo=express&logoColor=white)](https://expressjs.com/)
-[![MongoDB](https://img.shields.io/badge/MongoDB-Database-47A248?logo=mongodb&logoColor=white)](https://www.mongodb.com/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+## 🚀 **Quick Start - Run with One Command!**
 
-AI-powered resume screening system for automated candidate evaluation, skill-gap analysis, and recruiter-focused shortlisting.
-
-## Quick Start
-
-Run from project root on Windows:
-
+### Windows Users:
 ```batch
 RUN.bat
 ```
-
-or
-
+OR
 ```powershell
 .\RUN.ps1
 ```
 
-Open:
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:5500
+**Then open:** http://localhost:3000
 
-## Quick Links
-
-- System overview: [COMPLETE_SYSTEM_README.md](COMPLETE_SYSTEM_README.md)
-- Deployment guide: [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)
-- Operations guide: [DEPLOYMENT_OPERATIONS.md](DEPLOYMENT_OPERATIONS.md)
-- Integration testing: [TESTING_INTEGRATION_GUIDE.md](TESTING_INTEGRATION_GUIDE.md)
+- **Frontend**: Port 3000
+- **Backend API**: Port 5500
 
 ---
 

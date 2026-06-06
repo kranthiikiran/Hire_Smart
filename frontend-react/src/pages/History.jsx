@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../utils/api'
 import {
@@ -34,20 +34,12 @@ const History = () => {
     return null
   }
 
-  useEffect(() => {
-    fetchHistory()
-  }, [])
-
-  useEffect(() => {
-    filterAnalyses()
-  }, [searchQuery, filterClassification, analyses])
-
-  const fetchHistory = async () => {
+  const fetchHistory = useCallback(async () => {
     try {
       const response = await api.get('/api/analyze/history')
       const analysesList = Array.isArray(response.data?.analyses)
         ? response.data.analyses.map((analysis) => {
-            const matchScore = Number(analysis.candidateScore ?? analysis.averageScore ?? 0)
+            const matchScore = Number(analysis.averageScore || 0)
             return {
               id: analysis.id,
               jobTitle: analysis.jobTitle,
@@ -67,17 +59,18 @@ const History = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  const filterAnalyses = () => {
+  const filterAnalyses = useCallback(() => {
     let filtered = [...analyses]
 
     // Search filter
     if (searchQuery) {
+      const normalizedQuery = searchQuery.toLowerCase().trim()
       filtered = filtered.filter(
         (analysis) =>
-          analysis.jobTitle?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          analysis.candidateName?.toLowerCase().includes(searchQuery.toLowerCase())
+          analysis.jobTitle?.toLowerCase().includes(normalizedQuery) ||
+          analysis.candidateName?.toLowerCase().includes(normalizedQuery)
       )
     }
 
@@ -89,7 +82,17 @@ const History = () => {
     }
 
     setFilteredAnalyses(filtered)
-  }
+  }, [analyses, filterClassification, searchQuery])
+
+  useEffect(() => {
+    fetchHistory()
+  }, [fetchHistory])
+
+  useEffect(() => {
+    if (!loading) {
+      filterAnalyses()
+    }
+  }, [filterAnalyses, loading])
 
   const getScoreColor = (score) => {
     if (score >= 75) return 'var(--success)'
@@ -145,10 +148,10 @@ const History = () => {
             value={filterClassification}
             onChange={(e) => setFilterClassification(e.target.value)}
           >
-            <option value="all">All Classification Types</option>
-            <option value="suitable">Suitable Candidates (75%+)</option>
-            <option value="partial">Partially Suitable (50% - 74%)</option>
-            <option value="not-suitable">Not Suitable (Below 50%)</option>
+            <option value="all">All Classifications</option>
+            <option value="suitable">Suitable</option>
+            <option value="partial">Partially Suitable</option>
+            <option value="not-suitable">Not Suitable</option>
           </select>
         </div>
       </div>
@@ -324,11 +327,6 @@ const History = () => {
           font-weight: 500;
         }
 
-        .filter-select option {
-          background: #1f1f26;
-          color: #f8fafc;
-        }
-
         .filter-select:focus {
           outline: none;
         }
@@ -468,20 +466,20 @@ const History = () => {
         }
 
         .badge-success {
-          background: rgba(21, 128, 61, 0.75);
-          color: #ffffff;
+          background: rgba(34, 197, 94, 0.2);
+          color: #4ade80;
           border: 1px solid rgba(34, 197, 94, 0.3);
         }
 
         .badge-warning {
-          background: rgba(180, 83, 9, 0.78);
-          color: #ffffff;
+          background: rgba(245, 158, 11, 0.2);
+          color: #fbbf24;
           border: 1px solid rgba(245, 158, 11, 0.3);
         }
 
         .badge-danger {
-          background: rgba(153, 27, 27, 0.8);
-          color: #ffffff;
+          background: rgba(239, 68, 68, 0.2);
+          color: #f87171;
           border: 1px solid rgba(239, 68, 68, 0.3);
         }
 

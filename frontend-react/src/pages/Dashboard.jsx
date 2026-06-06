@@ -488,6 +488,13 @@ const Dashboard = () => {
     setSearchParams(nextParams, { replace: true })
   }
 
+  const deriveClassificationFromCounts = (analysis) => {
+    if (Number(analysis?.suitableCount || 0) > 0) return 'suitable'
+    if (Number(analysis?.partiallyCount || 0) > 0) return 'partial'
+    if (Number(analysis?.notSuitableCount || 0) > 0) return 'not-suitable'
+    return null
+  }
+
   useEffect(() => {
     fetchDashboardData()
   }, [])
@@ -516,8 +523,8 @@ const Dashboard = () => {
         : []
 
       const normalizedRecentAnalyses = historyList.map((analysis) => {
-        const matchScore = Number(analysis.candidateScore ?? analysis.averageScore ?? 0)
-        const classificationValue = analysis.candidateClassification ?? analysis.classification
+        const matchScore = Number(analysis.averageScore || 0)
+        const classificationFromCounts = deriveClassificationFromCounts(analysis)
 
         return {
           id: analysis.id,
@@ -529,7 +536,7 @@ const Dashboard = () => {
           notSuitableCount: Number(analysis.notSuitableCount || 0),
           totalProcessed: Number(analysis.totalProcessed || 0),
           matchScore,
-          classification: normalizeClassification(classificationValue, matchScore)
+          classification: classificationFromCounts || normalizeClassification(analysis.classification, matchScore)
         }
       })
 

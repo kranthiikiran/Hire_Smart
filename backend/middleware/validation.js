@@ -45,7 +45,7 @@ const resumeUploadSchema = Joi.object({
     .optional(),
 
   file_size: Joi.number()
-    .max(50 * 1024 * 1024)
+    .max(10 * 1024 * 1024)
     .required(),
 
   file_type: Joi.string()
@@ -94,7 +94,7 @@ const validateFile = (req, res, next) => {
   }
 
   const file = req.file;
-  const MAX_SIZE = 50 * 1024 * 1024;
+  const MAX_SIZE = 10 * 1024 * 1024;
 
   if (file.size > MAX_SIZE) {
     return res.status(400).json({

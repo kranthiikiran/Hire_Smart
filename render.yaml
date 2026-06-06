@@ -5,7 +5,7 @@ services:
     plan: free
     branch: main
     root: backend
-    buildCommand: npm install
+    buildCommand: npm install && cd ../frontend-react && npm install && npm run build
     startCommand: npm start
 
   - type: static

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Mail, Lock, UserCircle2, Briefcase, Lightbulb, Eye, EyeOff } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
@@ -42,7 +42,7 @@ function Login() {
     setIsPulling(true)
   }
 
-  const handlePullEnd = () => {
+  const handlePullEnd = useCallback(() => {
     if (isPulling && pullIntensity > 0.4) {
       setIsPulling(false)
       
@@ -71,9 +71,9 @@ function Login() {
       setStringPullOffset(0)
       setPullIntensity(0)
     }
-  }
+  }, [isPulling, pullIntensity])
 
-  const handlePullMove = (e) => {
+  const handlePullMove = useCallback((e) => {
     if (isPulling) {
       const startY = containerRef.current ? containerRef.current.getBoundingClientRect().top : 0
       const currentY = e.clientY - startY
@@ -83,7 +83,7 @@ function Login() {
       const intensity = Math.min(pullDistance / 80, 1)
       setPullIntensity(intensity)
     }
-  }
+  }, [isPulling])
 
   useEffect(() => {
     if (isPulling) {
@@ -102,7 +102,7 @@ function Login() {
         window.removeEventListener('touchend', handleEnd)
       }
     }
-  }, [isPulling, pullIntensity])
+  }, [isPulling, handlePullMove, handlePullEnd])
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
@@ -118,39 +118,20 @@ function Login() {
     e.preventDefault()
     setError('')
 
-    const normalizedEmail = String(formData.email || '').trim().toLowerCase()
-    const normalizedPassword = String(formData.password || '')
+    const email = String(formData.email || '').trim().toLowerCase()
+    const password = String(formData.password || '')
 
-    if (!normalizedEmail || !normalizedPassword) {
+    if (!email || !password) {
       setError('Please fill in all fields')
       return
     }
 
     try {
       setLoading(true)
-      await login({ email: normalizedEmail, password: normalizedPassword, role: formData.role })
+      await login({ email, password, role: formData.role })
       navigate('/dashboard')
     } catch (err) {
-      const status = err?.response?.status
-      const apiData = err?.response?.data
-      const apiMessage =
-        (typeof apiData === 'string' ? apiData : null) ||
-        apiData?.message ||
-        apiData?.error
-
-      if (status === 429) {
-        setError('Too many login attempts. Please wait a few minutes and try again.')
-      } else if (status === 401) {
-        setError(apiMessage || 'Invalid email or password. Please try again.')
-      } else if (status === 403) {
-        setError(apiMessage || 'Your account is not allowed to login right now. Please contact support.')
-      } else if (status === 404 || status === 405) {
-        setError('Login service is not reachable on this endpoint. Please restart backend and try again.')
-      } else if (!err?.response) {
-        setError('Unable to reach server. Please check backend is running and try again.')
-      } else {
-        setError(apiMessage || 'Login failed due to server response. Please try again.')
-      }
+      setError(err.response?.data?.message || err.response?.data?.error || err.message || 'Login failed. Please check your credentials.')
     } finally {
       setLoading(false)
     }
@@ -374,7 +355,7 @@ function Login() {
 
         <div className="lamp-auth-footer">
           <p>
-            Don't have an account?{' '}
+            Don&apos;t have an account?{' '}
             <Link to="/register" className="lamp-link">Register here</Link>
           </p>
         </div>

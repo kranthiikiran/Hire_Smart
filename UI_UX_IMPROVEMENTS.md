@@ -5,9 +5,7 @@
 This document details the comprehensive UI/UX redesign of HireSmart, transforming it into a modern, enterprise-grade HR-tech SaaS platform comparable to industry leaders like Workday, Greenhouse, and Lever.
 
 ---
-
 ## 🎯 Design Philosophy
-
 ### Core Principles
 1. **Professional First**: Enterprise-ready appearance suitable for HR departments
 2. **Clarity & Hierarchy**: Clear information architecture and visual hierarchy
@@ -45,9 +43,7 @@ This document details the comprehensive UI/UX redesign of HireSmart, transformin
 - **Gray Scale**: 50 to 900 for backgrounds, text, and borders
 - **White**: `#FFFFFF`
 - **Black**: `#000000`
-
 ### Typography
-
 #### Font Family
 ```css
 font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', ...

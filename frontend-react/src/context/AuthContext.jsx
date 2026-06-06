@@ -12,6 +12,7 @@ export const useAuth = () => {
   return context
 }
 
+// eslint-disable-next-line react/prop-types
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -28,13 +29,19 @@ export const AuthProvider = ({ children }) => {
     if (token) {
       try {
         const decoded = jwtDecode(token)
-        if (decoded.exp * 1000 > Date.now()) {
+        if (decoded?.exp * 1000 > Date.now()) {
           setUser(decoded)
         } else {
           localStorage.removeItem('hiresmart_token')
+          localStorage.removeItem('accessToken')
+          localStorage.removeItem('refreshToken')
+          localStorage.removeItem('user')
         }
       } catch (error) {
         localStorage.removeItem('hiresmart_token')
+        localStorage.removeItem('accessToken')
+        localStorage.removeItem('refreshToken')
+        localStorage.removeItem('user')
       }
     }
     setLoading(false)
@@ -53,27 +60,45 @@ export const AuthProvider = ({ children }) => {
       selectedRole = role
     }
 
-    const normalizedEmail = String(email || '').trim().toLowerCase()
-    const normalizedPassword = String(pwd || '')
+    const normalizedSelectedRole = normalizeRole(selectedRole)
 
-    const response = await authAPI.login({ email: normalizedEmail, password: normalizedPassword })
+    const response = await authAPI.login({ email, password: pwd })
     const { accessToken, refreshToken, user: userData } = response
-    const normalizedUserData = {
-      ...(userData || {}),
-      role: normalizeRole(userData?.role)
+
+    const normalizedUserRole = normalizeRole(userData?.role)
+
+    if (normalizedSelectedRole && normalizedSelectedRole !== normalizedUserRole) {
+      localStorage.removeItem('hiresmart_token')
+      localStorage.removeItem('accessToken')
+      localStorage.removeItem('refreshToken')
+      localStorage.removeItem('user')
+      setUser(null)
+      const roleError = new Error('Role mismatch')
+      roleError.response = {
+        data: {
+          message: 'Selected role does not match this account. Please choose the correct role.'
+        }
+      }
+      throw roleError
     }
     
     localStorage.setItem('accessToken', accessToken)
     if (refreshToken) {
       localStorage.setItem('refreshToken', refreshToken)
     }
-    localStorage.setItem('user', JSON.stringify(normalizedUserData))
+    localStorage.setItem('user', JSON.stringify(userData || {}))
     // Backward compatibility with existing code paths
     localStorage.setItem('hiresmart_token', accessToken)
-    const decoded = jwtDecode(accessToken)
+
+    let decoded
+    try {
+      decoded = jwtDecode(accessToken)
+    } catch (error) {
+      throw new Error('Login succeeded but token could not be decoded. Please try again.')
+    }
+
     setUser(decoded)
-    
-    return normalizedUserData
+    return userData
   }
 
   const register = async (nameOrData, email, password, role) => {
